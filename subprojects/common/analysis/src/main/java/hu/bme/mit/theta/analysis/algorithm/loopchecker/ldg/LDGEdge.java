@@ -13,17 +13,11 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-plugins {
-    id("java-common")
-}
+package hu.bme.mit.theta.analysis.algorithm.loopchecker.ldg;
 
-dependencies {
-    implementation(project(":theta-common"))
-    implementation(project(":theta-core"))
-    implementation(project(":theta-solver"))
-    testImplementation(project(":theta-solver-z3"))
-    testImplementation(project(mapOf("path" to ":theta-xsts-analysis")))
-    testImplementation(project(mapOf("path" to ":theta-xsts")))
-    testImplementation(project(mapOf("path" to ":theta-cfa-analysis")))
-    testImplementation(project(mapOf("path" to ":theta-cfa")))
+import hu.bme.mit.theta.analysis.expr.ExprAction;
+import hu.bme.mit.theta.analysis.expr.ExprState;
+
+public record LDGEdge<S extends ExprState, A extends ExprAction>(LDGNode<S, A> source, LDGNode<S, A> target, A action,
+																 boolean accepting) {
 }

@@ -13,17 +13,10 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-plugins {
-    id("java-common")
-}
+package hu.bme.mit.theta.analysis.algorithm.loopchecker.exception;
 
-dependencies {
-    implementation(project(":theta-common"))
-    implementation(project(":theta-core"))
-    implementation(project(":theta-solver"))
-    testImplementation(project(":theta-solver-z3"))
-    testImplementation(project(mapOf("path" to ":theta-xsts-analysis")))
-    testImplementation(project(mapOf("path" to ":theta-xsts")))
-    testImplementation(project(mapOf("path" to ":theta-cfa-analysis")))
-    testImplementation(project(mapOf("path" to ":theta-cfa")))
+public class InvalidPathException extends RuntimeException {
+	public InvalidPathException() {
+		super("The path given is not a lasso");
+	}
 }

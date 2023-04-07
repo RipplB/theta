@@ -1,0 +1,154 @@
+/*
+ *  Copyright 2023 Budapest University of Technology and Economics
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+package hu.bme.mit.theta.analysis.algorithm.loopchecker;
+
+import com.google.common.collect.ImmutableList;
+import hu.bme.mit.theta.analysis.Trace;
+import hu.bme.mit.theta.analysis.expr.ExprAction;
+import hu.bme.mit.theta.analysis.expr.ExprState;
+import hu.bme.mit.theta.analysis.expr.refinement.ExprTraceStatus;
+import hu.bme.mit.theta.analysis.expr.refinement.ItpRefutation;
+import hu.bme.mit.theta.common.logging.Logger;
+import hu.bme.mit.theta.common.logging.NullLogger;
+import hu.bme.mit.theta.core.decl.VarDecl;
+import hu.bme.mit.theta.core.model.Valuation;
+import hu.bme.mit.theta.core.type.Expr;
+import hu.bme.mit.theta.core.type.Type;
+import hu.bme.mit.theta.core.type.booltype.BoolType;
+import hu.bme.mit.theta.core.utils.ExprUtils;
+import hu.bme.mit.theta.core.utils.PathUtils;
+import hu.bme.mit.theta.core.utils.indexings.VarIndexing;
+import hu.bme.mit.theta.core.utils.indexings.VarIndexingFactory;
+import hu.bme.mit.theta.solver.Interpolant;
+import hu.bme.mit.theta.solver.ItpMarker;
+import hu.bme.mit.theta.solver.ItpPattern;
+import hu.bme.mit.theta.solver.ItpSolver;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import static hu.bme.mit.theta.core.type.abstracttype.AbstractExprs.Eq;
+import static hu.bme.mit.theta.core.type.booltype.BoolExprs.True;
+
+public final class LDGTraceChecker<S extends ExprState, A extends ExprAction> {
+	private final ItpSolver solver;
+	private final Expr<BoolType> init;
+	private final LDGTrace<S, A> ldgTrace;
+	private final Trace<S, A> trace;
+	private final int stateCount;
+	private final List<VarIndexing> indexings;
+	private final ItpMarker satMarker;
+	private final ItpMarker unreachableMarker;
+	private final ItpPattern pattern;
+	private final Set<VarDecl<?>> variables;
+	private final Logger logger;
+
+	private LDGTraceChecker(ItpSolver solver, Expr<BoolType> init, LDGTrace<S, A> ldgTrace, Logger logger) {
+		this.solver = solver;
+		this.init = init;
+		this.ldgTrace = ldgTrace;
+		this.logger = logger != null ? logger : NullLogger.getInstance();
+		trace = ldgTrace.toTrace();
+		stateCount = trace.getStates().size();
+		indexings = new ArrayList<>(stateCount);
+		satMarker = solver.createMarker();
+		unreachableMarker = solver.createMarker();
+		pattern = solver.createBinPattern(satMarker, unreachableMarker);
+		variables = new HashSet<>();
+	}
+
+	public static <S extends ExprState, A extends ExprAction> ExprTraceStatus<ItpRefutation> check(final LDGTrace<S, A> ldgTrace, final ItpSolver solver, final Expr<BoolType> init, Logger logger) {
+		ExprTraceStatus<ItpRefutation> status = new LDGTraceChecker<>(solver, init, ldgTrace, logger).check();
+		solver.reset();
+		return status;
+	}
+
+	public static <S extends ExprState, A extends ExprAction> ExprTraceStatus<ItpRefutation> check(final LDGTrace<S, A> ldgTrace, final ItpSolver solver, Logger logger) {
+		return check(ldgTrace, solver, True(), logger);
+	}
+
+	private ExprTraceStatus<ItpRefutation> check() {
+		solver.push();
+		indexings.add(VarIndexingFactory.indexing(0));
+		solver.add(satMarker, PathUtils.unfold(init, indexings.get(0)));
+		solver.add(satMarker, PathUtils.unfold(trace.getState(0).toExpr(), indexings.get(0)));
+
+		final int satIndex = findSatIndex();
+		if (satIndex < trace.getStates().size() - 1)
+			return infeasibleAsLoopIsUnreachable(satIndex);
+		return evaluateLoop(satIndex);
+	}
+
+	private int findSatIndex() {
+		for (int i = 1; i < stateCount; ++i) {
+			solver.push();
+			indexings.add(indexings.get(i - 1).add(trace.getAction(i - 1).nextIndexing()));
+			solver.add(satMarker, PathUtils.unfold(trace.getState(i).toExpr(), indexings.get(i)));
+			solver.add(satMarker, PathUtils.unfold(trace.getAction(i - 1).toExpr(), indexings.get(i - 1)));
+			variables.addAll(ExprUtils.getVars(trace.getState(i).toExpr()));
+			variables.addAll(ExprUtils.getVars(trace.getAction(i - 1).toExpr()));
+			if (solver.check().isUnsat()) {
+				solver.pop();
+				return i - 1;
+			}
+		}
+		return stateCount - 1;
+	}
+
+	private ExprTraceStatus<ItpRefutation> infeasibleAsLoopIsUnreachable(int satPrefix) {
+		solver.add(unreachableMarker, PathUtils.unfold(trace.getState(satPrefix + 1).toExpr(), indexings.get(satPrefix + 1)));
+		solver.add(unreachableMarker, PathUtils.unfold(trace.getAction(satPrefix).toExpr(), indexings.get(satPrefix)));
+		return infeasibleThroughInterpolant(satPrefix);
+	}
+
+	private ExprTraceStatus<ItpRefutation> infeasibleThroughInterpolant(int satPrefix) {
+		solver.check();
+		final Interpolant interpolant = solver.getInterpolant(pattern);
+		Expr<BoolType> interpolantExpr = interpolant.eval(satMarker);
+		logInterpolant(interpolantExpr);
+		final Expr<BoolType> itpFolded = PathUtils.foldin(interpolantExpr, indexings.get(satPrefix));
+		return ExprTraceStatus.infeasible(ItpRefutation.binary(itpFolded, satPrefix, stateCount));
+	}
+
+	private ExprTraceStatus<ItpRefutation> evaluateLoop(int satPrefix) {
+		final Valuation model = solver.getModel();
+		solver.add(satMarker, PathUtils.unfold(True(), indexings.get(stateCount - 1)));
+		for (VarDecl<? extends Type> variable :
+				variables) {
+			solver.add(unreachableMarker, Eq(PathUtils.unfold(variable.getRef(), indexings.get(ldgTrace.getTail().size())), PathUtils.unfold(variable.getRef(), indexings.get(stateCount - 1))));
+			if (solver.check().isSat())
+				continue;
+			final Interpolant interpolant = solver.getInterpolant(pattern);
+			ItpFolder folder = new ItpFolder(indexings.get(stateCount - 1), model);
+			Expr<BoolType> interpolantExpr = folder.foldIn(interpolant.eval(satMarker));
+			logInterpolant(interpolantExpr);
+			return ExprTraceStatus.infeasible(ItpRefutation.binary(interpolantExpr, satPrefix, stateCount));
+		}
+		final Valuation finalModel = solver.getModel();
+		final ImmutableList.Builder<Valuation> builder = ImmutableList.builder();
+		for (final VarIndexing indexing : indexings) {
+			builder.add(PathUtils.extractValuation(finalModel, indexing));
+		}
+		return ExprTraceStatus.feasible(Trace.of(builder.build(), trace.getActions()));
+	}
+
+	private void logInterpolant(Expr<BoolType> interpolant) {
+		logger.write(Logger.Level.INFO, "Created interpolant %s%n", interpolant);
+	}
+
+}
