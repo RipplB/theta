@@ -21,4 +21,9 @@ plugins {
 dependencies {
     implementation(project(":theta-common"))
     implementation(project(":theta-core"))
+    implementation(files("lib/owl-21.0.jar"))
+    implementation(files("lib/jhoafparser-1.1.1.jar"))
+    // https://mvnrepository.com/artifact/de.tum.in/jbdd
+    implementation("de.tum.in:jbdd:0.5.2")
+    testImplementation(project(":theta-cfa-analysis"))
 }
