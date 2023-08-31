@@ -20,6 +20,8 @@ import hu.bme.mit.theta.core.type.Expr;
 import hu.bme.mit.theta.core.type.abstracttype.Equational;
 import hu.bme.mit.theta.core.type.abstracttype.NeqExpr;
 
+import java.math.BigInteger;
+
 public final class BoolType implements Equational<BoolType> {
 
     private static final BoolType INSTANCE = new BoolType();

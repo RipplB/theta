@@ -22,6 +22,8 @@ import hu.bme.mit.theta.core.type.abstracttype.Equational;
 import hu.bme.mit.theta.core.type.abstracttype.Multiplicative;
 import hu.bme.mit.theta.core.type.abstracttype.Ordered;
 
+import java.math.BigInteger;
+
 public final class RatType
         implements Additive<RatType>, Multiplicative<RatType>, Equational<RatType>, Ordered<RatType> {
 

@@ -15,16 +15,17 @@
  */
 plugins {
     id("java-common")
+    id("kotlin-common")
 }
 
 dependencies {
     implementation(project(":theta-common"))
     implementation(project(":theta-core"))
     implementation(project(":theta-solver"))
-    implementation(project(mapOf("path" to ":theta-solver-z3")))
+    implementation(project(":theta-analysis"))
+    implementation(project(mapOf("path" to ":theta-cfa")))
+    implementation(project(mapOf("path" to ":theta-cfa-analysis")))
     testImplementation(project(":theta-solver-z3"))
     testImplementation(project(mapOf("path" to ":theta-xsts-analysis")))
     testImplementation(project(mapOf("path" to ":theta-xsts")))
-    testImplementation(project(mapOf("path" to ":theta-cfa-analysis")))
-    testImplementation(project(mapOf("path" to ":theta-cfa")))
 }

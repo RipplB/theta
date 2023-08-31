@@ -121,7 +121,7 @@ public class LDGCegarVerifierTest {
 		final LDGCegarVerifier<XstsState<PredState>, XstsAction, PredPrec> verifier = LDGCegarVerifier.of(analysis, lts, target, logger, itpSolver, new ItpRefToPredPrec(ExprSplitters.atoms()));
 
 		final PredPrec precision = PredPrec.of();
-		Optional<Trace<XstsState<PredState>, XstsAction>> result = verifier.verify(precision, SearchStrategy.DFS);
+		Optional<Trace<XstsState<PredState>, XstsAction>> result = verifier.verify(precision, SearchStrategy.DFS, RefinerStrategy.MILANO);
 		Assert.assertEquals(this.result, result.isPresent());
 	}
 
@@ -137,7 +137,7 @@ public class LDGCegarVerifierTest {
 		final LDGCegarVerifier<CfaState<PredState>, CfaAction, CfaPrec<PredPrec>> verifier = LDGCegarVerifier.of(analysis, lts, target, logger, itpSolver, cfaRefToPrec);
 
 		final GlobalCfaPrec<PredPrec> prec = GlobalCfaPrec.create(PredPrec.of());
-		Optional<Trace<CfaState<PredState>, CfaAction>> res = verifier.verify(prec, SearchStrategy.DFS);
+		Optional<Trace<CfaState<PredState>, CfaAction>> res = verifier.verify(prec, SearchStrategy.DFS, RefinerStrategy.MILANO);
 		Assert.assertEquals(result, res.isPresent());
 	}
 }

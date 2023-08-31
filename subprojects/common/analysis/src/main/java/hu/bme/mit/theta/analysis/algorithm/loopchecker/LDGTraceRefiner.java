@@ -52,8 +52,8 @@ public final class LDGTraceRefiner<S extends ExprState, A extends ExprAction, P 
 		return create(solver, True(), refToPrec, logger);
 	}
 
-	public RefinerResult<S, A, P> check(final LDGTrace<S, A> ldgTrace, final P currentPrecision) {
-		ExprTraceStatus<ItpRefutation> refutation = LDGTraceChecker.check(ldgTrace, solver, init, logger);
+	public RefinerResult<S, A, P> check(final LDGTrace<S, A> ldgTrace, final P currentPrecision, RefinerStrategy refinerStrategy) {
+		ExprTraceStatus<ItpRefutation> refutation = LDGTraceChecker.check(ldgTrace, solver, init, refinerStrategy, logger);
 		if (refutation.isInfeasible()) {
 			P refinedPrecision = refiner.refine(currentPrecision, ldgTrace.toTrace(), refutation.asInfeasible().getRefutation());
 			return RefinerResult.spurious(refinedPrecision);

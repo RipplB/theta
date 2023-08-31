@@ -64,24 +64,24 @@ public final class LDGCegarVerifier<S extends ExprState, A extends ExprAction, P
 		return new LDGCegarVerifier<>(LDGAbstractor.create(analysis, lts, target, logger), LDGTraceRefiner.create(solver, init, refToPrec, logger), logger);
 	}
 
-	public Optional<Trace<S, A>> verify(P initialPrecision, SearchStrategy strategy) {
+	public Optional<Trace<S, A>> verify(P initialPrecision, SearchStrategy searchStrategy, RefinerStrategy refinerStrategy) {
 		int i = 1;
 		P currentPrecision = initialPrecision;
 		while (true) {
 			logger.write(Logger.Level.MAINSTEP, "%d. iteration: Abstracting with precision %s%n", i++, currentPrecision);
-			Optional<LDGTrace<S, A>> abstractResult = abstractor.onTheFlyCheck(currentPrecision, strategy);
+			Optional<LDGTrace<S, A>> abstractResult = abstractor.onTheFlyCheck(currentPrecision, searchStrategy);
 			if (abstractResult.isEmpty()) {
 				logger.write(Logger.Level.RESULT, "Abstractor found no abstract counterexample%n");
 				return Optional.empty();
 			}
 			LDGTrace<S, A> abstractTrace = abstractResult.get();
 			logger.write(Logger.Level.MAINSTEP, "Abstract counterexample found%n");
-			abstractTrace.print(logger, Logger.Level.INFO);
-			RefinerResult<S, A, P> refinerResult = refiner.check(abstractTrace, currentPrecision);
+			abstractTrace.print(logger, Logger.Level.DETAIL);
+			RefinerResult<S, A, P> refinerResult = refiner.check(abstractTrace, currentPrecision, refinerStrategy);
 			if (refinerResult.isUnsafe()) {
 				logger.write(Logger.Level.RESULT, "Refiner found counterexample to be feasible%n");
 				Trace<S, A> counterexample = refinerResult.asUnsafe().getCex();
-				logger.write(Logger.Level.INFO, "%s%n", counterexample);
+				logger.write(Logger.Level.DETAIL, "%s%n", counterexample);
 				return Optional.of(counterexample);
 			}
 			logger.write(Logger.Level.MAINSTEP, "Counterexample is infeasible, continue with refined precision%n");

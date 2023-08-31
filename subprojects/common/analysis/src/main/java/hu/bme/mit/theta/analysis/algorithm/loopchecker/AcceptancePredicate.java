@@ -47,7 +47,9 @@ public final class AcceptancePredicate<S extends ExprState, A extends ExprAction
 	}
 
 	public boolean test(S state, A action) {
-		return (statePredicate == null || statePredicate.test(state)) && (actionPredicate == null || actionPredicate.test(action));
+		if (statePredicate == null && action == null)
+			return false;
+		return (statePredicate == null || statePredicate.test(state)) && (actionPredicate == null || (action !=null && actionPredicate.test(action)));
 	}
 
 	public boolean testState(S state) {

@@ -7,6 +7,7 @@ main process cfa {
     loc L3
     loc IS6
     loc IS7
+    error loc ERR
 
 	L0 -> L1 { x := 0 }
     L1 -> L2 { assume x < 5 }

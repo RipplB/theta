@@ -15,6 +15,8 @@
  */
 package hu.bme.mit.theta.core.type;
 
+import java.math.BigInteger;
+
 public interface Type {
 	DomainSize getDomainSize();
 }

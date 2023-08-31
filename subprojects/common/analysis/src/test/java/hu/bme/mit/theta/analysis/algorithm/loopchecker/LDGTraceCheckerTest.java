@@ -62,7 +62,7 @@ public class LDGTraceCheckerTest {
 		Optional<LDGTrace<XstsState<PredState>, XstsAction>> possibleTrace = abstractor.onTheFlyCheck(precision, SearchStrategy.DFS);
 		LDGTrace<XstsState<PredState>, XstsAction> trace = possibleTrace.orElseThrow();
 
-		ExprTraceStatus<ItpRefutation> status = LDGTraceChecker.check(trace, itpSolver, logger);
+		ExprTraceStatus<ItpRefutation> status = LDGTraceChecker.check(trace, itpSolver, RefinerStrategy.MILANO, logger);
 		Assert.assertTrue(status.isInfeasible());
 	}
 }

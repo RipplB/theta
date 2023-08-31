@@ -19,6 +19,7 @@ include(
     "common/analysis",
     "common/common",
     "common/core",
+    "common/ltl",
 
     "frontends/c-frontend",
     "frontends/chc-frontend",
