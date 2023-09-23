@@ -73,7 +73,9 @@ public final class BuchiBuilder implements HOAConsumer {
         Map<String, Integer> literalToIntMap = new HashMap<>();
         ToStringVisitor toStringVisitor = new ToStringVisitor(new APGeneratorVisitor(namedVariables, literalToIntMap));
         String swappedLtl = toStringVisitor.visitModel(modelContext);
+        logger.write(Logger.Level.INFO, "Swapped from %s to %s%n", ltlExpression, swappedLtl);
         LabelledFormula negatedLtl = LtlParser.parse(swappedLtl).not();
+        logger.write(Logger.Level.INFO, "Building automaton for: %s%n", negatedLtl);
         Automaton<Either<Formula, ProductState>, BuchiAcceptance> oautomaton = SymmetricNBAConstruction.of(BuchiAcceptance.class).apply(negatedLtl);
         BuchiBuilder buchiBuilder = new BuchiBuilder(logger);
         buchiBuilder.swappedExpressions = toStringVisitor.aps;

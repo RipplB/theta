@@ -17,6 +17,7 @@ package hu.bme.mit.theta.analysis.algorithm.loopchecker;
 
 import com.google.common.collect.ImmutableList;
 import hu.bme.mit.theta.analysis.Trace;
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.ldg.LDGEdge;
 import hu.bme.mit.theta.analysis.expl.ExplPrec;
 import hu.bme.mit.theta.analysis.expl.ExplState;
 import hu.bme.mit.theta.analysis.expr.ExprAction;
@@ -29,6 +30,7 @@ import hu.bme.mit.theta.common.logging.Logger;
 import hu.bme.mit.theta.common.logging.NullLogger;
 import hu.bme.mit.theta.core.decl.VarDecl;
 import hu.bme.mit.theta.core.model.Valuation;
+import hu.bme.mit.theta.core.type.DomainSize;
 import hu.bme.mit.theta.core.type.Expr;
 import hu.bme.mit.theta.core.type.Type;
 import hu.bme.mit.theta.core.type.booltype.BoolType;
@@ -42,9 +44,7 @@ import hu.bme.mit.theta.solver.ItpPattern;
 import hu.bme.mit.theta.solver.ItpSolver;
 import hu.bme.mit.theta.solver.z3.Z3SolverFactory;
 
-import java.math.BigInteger;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -211,25 +211,22 @@ public final class LDGTraceChecker<S extends ExprState, A extends ExprAction> {
 		Function<? super Valuation, ? extends ExplState> func = usedVariablesPrecision::createState;
 		Expr<BoolType> expr = loop.get(i).source().getState().toExpr();
 		Collection<? extends ExplState> statesForExpr = ExprStates.createStatesForExpr(Z3SolverFactory.getInstance().createSolver(), expr, 0, func, VarIndexingFactory.indexing(0), bound);
-		BigInteger bBound = BigInteger.valueOf(bound);
-		AtomicBoolean inf = new AtomicBoolean(false);
-		BigInteger currentSize = statesForExpr
+		DomainSize currentSize = statesForExpr
 				.stream()
 				.map(state -> usedVariablesPrecision
 						.getVars()
 						.stream()
 						.filter(Predicate.not(ExprUtils.getVars(state.toExpr())::contains))
-						.map(varDecl -> varDecl.getType().getDomainSize())
-						.peek(bigInteger -> {
-							if (bigInteger.compareTo(BigInteger.ZERO) < 0)
-								inf.set(true);
-						})
-						.reduce(BigInteger.ONE, BigInteger::multiply)
+						.map(VarDecl::getType)
+						.map(Type::getDomainSize)
+						.reduce(DomainSize.ONE, DomainSize::multiply)
 				)
-				.reduce(BigInteger.ZERO, BigInteger::add);
-		if (inf.get() || currentSize.compareTo(bBound) > 0)
-			currentSize = bBound;
-		return findSmallestAbstractState(i + 1, currentSize.intValue(), usedVariablesPrecision);
+				.reduce(DomainSize.ZERO, DomainSize::add);
+		if (currentSize.getFiniteSize().intValue() == 1)
+			logger.write(Logger.Level.INFO, "Abstract state contains 1 concrete state%n");
+		if (currentSize.isInfinite() || currentSize.isBiggerThan(bound))
+			return findSmallestAbstractState(i + 1, bound, usedVariablesPrecision);
+		return findSmallestAbstractState(i + 1, currentSize.getFiniteSize().intValue(), usedVariablesPrecision);
 	}
 
 	private Set<VarDecl<?>> expandUsedVariables(Set<VarDecl<?>> usedVariables) {

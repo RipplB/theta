@@ -20,8 +20,6 @@ import hu.bme.mit.theta.core.type.DomainSize;
 import hu.bme.mit.theta.core.type.Expr;
 import hu.bme.mit.theta.core.type.abstracttype.*;
 
-import java.math.BigInteger;
-
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class FpType implements Equational<FpType>, Additive<FpType>, Multiplicative<FpType>,

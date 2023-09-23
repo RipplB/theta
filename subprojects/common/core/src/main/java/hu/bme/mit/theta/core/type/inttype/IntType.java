@@ -21,8 +21,6 @@ import hu.bme.mit.theta.core.type.Type;
 import hu.bme.mit.theta.core.type.abstracttype.*;
 import hu.bme.mit.theta.core.type.rattype.RatType;
 
-import java.math.BigInteger;
-
 public final class IntType implements Additive<IntType>, Multiplicative<IntType>,
         Divisible<IntType>, Equational<IntType>, Ordered<IntType>,
         Castable<IntType> {

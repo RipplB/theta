@@ -24,8 +24,6 @@ import hu.bme.mit.theta.core.type.abstracttype.*;
 import hu.bme.mit.theta.core.type.fptype.FpRoundingMode;
 import hu.bme.mit.theta.core.type.fptype.FpType;
 
-import java.math.BigInteger;
-
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static hu.bme.mit.theta.core.type.fptype.FpExprs.FromBv;

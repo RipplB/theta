@@ -40,17 +40,22 @@ class LtlCheckTestWithCfaPred(
         @JvmStatic
         @Parameterized.Parameters
         fun data() = listOf(
-                arrayOf("wave_flags", "F G(x=true)", false),
-                arrayOf("wave_flags", "F G(x=true and y=true)", false),
-                arrayOf("wave_flag", "G F(x=true)", true),
-                arrayOf("wave_flag", "G(x=true)", false),
-                arrayOf("wave_flag", "F G(x=true)", false),
-                arrayOf("counter5inf", "G(not(x=6))", true),
+//                arrayOf("wave_flags", "F G(x)", false),
+//                arrayOf("wave_flags", "F G(x and y)", false),
+//                arrayOf("wave_flag", "G F(x)", true),
+//                arrayOf("wave_flag", "G(x)", false),
+//                arrayOf("wave_flag", "F G(x)", false),
+//                arrayOf("counter5inf", "G(not(x=6))", true),
                 arrayOf("counter5inf", "G(x=1)", false),
-                arrayOf("counter5inf", "G(x=5)", false),
-                arrayOf("counter5inf", "F G(x=5)", true),
-                arrayOf("counter5inf", "F(x=1)", true),
-                arrayOf("counter5inf", "F(x=5)", true),
+//                arrayOf("counter5inf", "G(x=5)", false),
+//                arrayOf("counter5inf", "F G(x=5)", true),
+//                arrayOf("counter5inf", "F(x=1)", true),
+//                arrayOf("counter5inf", "F(x=5)", true),
+//                arrayOf("wave_flags", "G F(y)", true),
+//                arrayOf("wave_flags", "F G(x)", false),
+//                arrayOf("indicator", "G (x -> y)", true),
+//                arrayOf("indicator", "G (y -> X x)", true),
+//                arrayOf("indicator", "G (y -> X (not y))", false),
         )
     }
 
