@@ -5,8 +5,10 @@ main process cfa {
 	loc L0
 	loc L1
 	init loc L2
+	loc L3
 
     L0 -> L1 { y := true }
     L1 -> L2 { x := true }
-    L2 -> L0 { y := false x := false }
+    L2 -> L3 { x := false }
+    L3 -> L0 { y := false }
 }

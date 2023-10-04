@@ -223,7 +223,7 @@ public final class LDGTraceChecker<S extends ExprState, A extends ExprAction> {
 				)
 				.reduce(DomainSize.ZERO, DomainSize::add);
 		if (currentSize.getFiniteSize().intValue() == 1)
-			logger.write(Logger.Level.INFO, "Abstract state contains 1 concrete state%n");
+			logger.write(Logger.Level.INFO, "Abstract state %s contains 1 concrete state%n", loop.get(i).source().getState());
 		if (currentSize.isInfinite() || currentSize.isBiggerThan(bound))
 			return findSmallestAbstractState(i + 1, bound, usedVariablesPrecision);
 		return findSmallestAbstractState(i + 1, currentSize.getFiniteSize().intValue(), usedVariablesPrecision);
