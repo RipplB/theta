@@ -40,7 +40,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.SequenceInputStream;
-import java.util.Optional;
+import java.util.Collection;
 import java.util.function.Predicate;
 
 public class LDGTraceCheckerTest {
@@ -59,8 +59,8 @@ public class LDGTraceCheckerTest {
 		final PredPrec precision = PredPrec.of();
 		final Logger logger = new ConsoleLogger(Logger.Level.DETAIL);
 		final LDGAbstractor<XstsState<PredState>, XstsAction, PredPrec> abstractor = LDGAbstractor.create(analysis, lts, target, logger);
-		Optional<LDGTrace<XstsState<PredState>, XstsAction>> possibleTrace = abstractor.onTheFlyCheck(precision, SearchStrategy.DFS);
-		LDGTrace<XstsState<PredState>, XstsAction> trace = possibleTrace.orElseThrow();
+		Collection<LDGTrace<XstsState<PredState>, XstsAction>> possibleTrace = abstractor.onTheFlyCheck(precision, SearchStrategy.DFS);
+		LDGTrace<XstsState<PredState>, XstsAction> trace = possibleTrace.iterator().next();
 
 		ExprTraceStatus<ItpRefutation> status = LDGTraceChecker.check(trace, itpSolver, RefinerStrategy.MILANO, logger);
 		Assert.assertTrue(status.isInfeasible());

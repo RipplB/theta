@@ -25,6 +25,7 @@ import hu.bme.mit.theta.core.stmt.Stmts;
 import hu.bme.mit.theta.core.type.Expr;
 import hu.bme.mit.theta.core.type.booltype.BoolExprs;
 import hu.bme.mit.theta.core.type.booltype.BoolType;
+import hu.bme.mit.theta.core.type.enumtype.EnumType;
 import jhoafparser.ast.AtomAcceptance;
 import jhoafparser.ast.AtomLabel;
 import jhoafparser.ast.BooleanExpression;
@@ -70,8 +71,8 @@ public final class BuchiBuilder implements HOAConsumer {
                 )
         ).model();
         Map<String, VarDecl<?>> namedVariables = variables.stream().collect(Collectors.toMap(Decl::getName, v -> v));
-        Map<String, Integer> literalToIntMap = new HashMap<>();
-        ToStringVisitor toStringVisitor = new ToStringVisitor(new APGeneratorVisitor(namedVariables, literalToIntMap));
+        Map<String, EnumType> enumTypes = variables.stream().map(VarDecl::getType).filter(EnumType.class::isInstance).map(t -> (EnumType) t).distinct().collect(Collectors.toMap(EnumType::getName, t -> t));
+        ToStringVisitor toStringVisitor = new ToStringVisitor(new APGeneratorVisitor(namedVariables, enumTypes));
         String swappedLtl = toStringVisitor.visitModel(modelContext);
         LabelledFormula negatedLtl = LtlParser.parse(swappedLtl).not();
         Automaton<Either<Formula, ProductState>, BuchiAcceptance> oautomaton = SymmetricNBAConstruction.of(BuchiAcceptance.class).apply(negatedLtl);

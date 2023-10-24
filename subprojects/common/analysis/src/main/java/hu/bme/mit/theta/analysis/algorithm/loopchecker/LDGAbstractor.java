@@ -18,16 +18,19 @@ package hu.bme.mit.theta.analysis.algorithm.loopchecker;
 import hu.bme.mit.theta.analysis.Analysis;
 import hu.bme.mit.theta.analysis.LTS;
 import hu.bme.mit.theta.analysis.Prec;
+import hu.bme.mit.theta.analysis.State;
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.ldg.LDG;
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.ldg.LDGEdge;
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.ldg.LDGNode;
 import hu.bme.mit.theta.analysis.expr.ExprAction;
 import hu.bme.mit.theta.analysis.expr.ExprState;
+import hu.bme.mit.theta.common.container.Containers;
 import hu.bme.mit.theta.common.logging.Logger;
 import hu.bme.mit.theta.common.logging.NullLogger;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public final class LDGAbstractor<S extends ExprState, A extends ExprAction, P extends Prec> {
@@ -59,37 +62,95 @@ public final class LDGAbstractor<S extends ExprState, A extends ExprAction, P ex
 		return edge;
 	}
 
-	public Optional<LDGTrace<S, A>> onTheFlyCheck(P precision, SearchStrategy strategy) {
+	public Collection<LDGTrace<S, A>> onTheFlyCheck(P precision, SearchStrategy strategy) {
 		ldg = LDG.create(analysis.getInitFunc().getInitStates(precision), target);
 		prec = precision;
 		logger.write(Logger.Level.INFO, "On-the-fly checking started from %d initial nodes with strategy %s%n", ldg.getInitNodes().size(), strategy);
 		return switch (strategy) {
 			case DFS -> dfsSearch();
+			case NDFS -> ndfs();
+			case FULL -> fullSearch();
 		};
 	}
 
-	private Optional<LDGTrace<S, A>> dfsSearch() {
+	private Collection<LDGTrace<S, A>> dfsSearch() {
 		for (LDGNode<S, A> initNode : ldg.getInitNodes()) {
-			Optional<LDGTrace<S, A>> possibleTrace = expandFromInitNodeUntilTarget(initNode);
-			if (possibleTrace.isPresent())
-				return possibleTrace;
+			Collection<LDGTrace<S, A>> possibleTraces = expandFromInitNodeUntilTarget(initNode, true);
+			if (!possibleTraces.isEmpty()) {
+				return possibleTraces;
+			}
 		}
-		return Optional.empty();
+		return Collections.emptyList();
 	}
 
-	private Optional<LDGTrace<S, A>> expandFromInitNodeUntilTarget(LDGNode<S, A> initNode) {
-		return Optional.ofNullable(expandThroughNodeUntilTarget(new LinkedHashMap<>(), new LDGEdge<>(null, initNode, null, false), new LinkedList<>(), 0).lasso);
+	private Collection<LDGTrace<S, A>> ndfs() {
+		for (var initNode :
+				ldg.getInitNodes()) {
+			for (var edge :
+					expand(initNode)) {
+				var result = blueSearch(edge, new LinkedList<>(), Containers.createSet(), Containers.createSet());
+				if (!result.isEmpty())
+					return result;
+			}
+		}
+		return Collections.emptyList();
 	}
 
-	private BacktrackResult<S, A> expandThroughNodeUntilTarget(LinkedHashMap<LDGNode<S, A>, Integer> pathSoFar, LDGEdge<S, A> incomingEdge, LinkedList<LDGEdge<S, A>> edgesSoFar, int targetsSoFar) {
+	private List<LDGEdge<S, A>> redSearch(LDGNode<S, A> seed, LDGEdge<S, A> edge, LinkedList<LDGEdge<S, A>> trace, Set<LDGNode<S, A>> redNodes) {
+		var targetNode = edge.target();
+		trace.add(edge);
+		if (targetNode.equals(seed)) {
+			return trace;
+		}
+		if (redNodes.contains(targetNode)) {
+			trace.removeLast();
+			return Collections.emptyList();
+		}
+		redNodes.add(edge.target());
+		for (var nextEdge :
+				expand(targetNode)) {
+			var redSearch = redSearch(seed, nextEdge, trace, redNodes);
+			if (!redSearch.isEmpty())
+				return redSearch;
+		}
+		trace.removeLast();
+		return Collections.emptyList();
+	}
+
+	private Collection<LDGTrace<S, A>> blueSearch(LDGEdge<S, A> edge, LinkedList<LDGEdge<S, A>> trace, Collection<LDGNode<S, A>> blueNodes, Set<LDGNode<S, A>> redNodes) {
+		var targetNode = edge.target();
+		trace.add(edge);
+		if (target.test(targetNode.getState(), edge.action())) {
+			var accNode = targetNode.isAccepting() ? targetNode : edge.source();
+			List<LDGEdge<S, A>> redSearch = redSearch(accNode, edge, new LinkedList<>(trace), Containers.createSet());
+			if (!redSearch.isEmpty())
+				return Collections.singleton(LDGTrace.lassoFromEdgesWithHonda(redSearch, accNode));
+		}
+		if (blueNodes.contains(targetNode)) {
+			trace.removeLast();
+			return Collections.emptyList();
+		}
+		blueNodes.add(edge.target());
+		for (var nextEdge :
+				expand(targetNode)) {
+			var blueSearch = blueSearch(nextEdge, trace, blueNodes, redNodes);
+			if (!blueSearch.isEmpty())
+				return blueSearch;
+		}
+		trace.removeLast();
+		return Collections.emptyList();
+	}
+
+	private Collection<LDGTrace<S, A>> fullSearch() {
+		return ldg.getInitNodes().stream().map(initNode -> expandFromInitNodeUntilTarget(initNode, false)).flatMap(Collection::stream).toList();
+	}
+
+	private Collection<LDGTrace<S, A>> expandFromInitNodeUntilTarget(LDGNode<S, A> initNode, boolean stopAtLasso) {
+		return expandThroughNode(new LinkedHashMap<>(), new LDGEdge<>(null, initNode, null, false), new LinkedList<>(), 0, stopAtLasso).lassos;
+	}
+
+	private BacktrackResult<S, A> expandThroughNode(LinkedHashMap<LDGNode<S, A>, Integer> pathSoFar, LDGEdge<S, A> incomingEdge, LinkedList<LDGEdge<S, A>> edgesSoFar, int targetsSoFar, boolean stopAtLasso) {
 		LDGNode<S, A> expandingNode = incomingEdge.target();
-		Function<LDGNode<S, A>, Stream<LDGEdge<S, A>>> expandStrategy;
-		if (!expandingNode.isExpanded())
-			expandStrategy = this::expand;
-		else {
-			expandStrategy = expandingNode.getValidLoopHondas().stream().filter(pathSoFar::containsKey).anyMatch(node -> pathSoFar.get(node) < targetsSoFar) ? this::traverse : n -> Stream.empty();
-		}
-		expandingNode.setExpanded(true);
 		logger.write(Logger.Level.VERBOSE, "Expanding through %s edge to %s node with state %s%n", incomingEdge.accepting() ? "accepting" : "not accepting", expandingNode.isAccepting() ? "accepting" : "not accepting", expandingNode.getState());
 		if (expandingNode.getState().isBottom()) {
 			logger.write(Logger.Level.VERBOSE, "Node is a dead end since its bottom%n");
@@ -97,9 +158,9 @@ public final class LDGAbstractor<S extends ExprState, A extends ExprAction, P ex
 		}
 		int totalTargets = expandingNode.isAccepting() || incomingEdge.accepting() ? targetsSoFar + 1 : targetsSoFar;
 		if (pathSoFar.containsKey(expandingNode) && pathSoFar.get(expandingNode) < totalTargets) {
-			logger.write(Logger.Level.RESULT, "Found trace with a length of %d, building lasso...%n", pathSoFar.size());
+			logger.write(Logger.Level.SUBSTEP, "Found trace with a length of %d, building lasso...%n", pathSoFar.size());
 			logger.write(Logger.Level.DETAIL, "Honda should be: %s", expandingNode.getState());
-			pathSoFar.forEach((node, targetsThatFar) -> logger.write(Logger.Level.DETAIL, "Node state %s | targets that far: %d%n", node.getState(), targetsThatFar));
+			pathSoFar.forEach((node, targetsThatFar) -> logger.write(Logger.Level.VERBOSE, "Node state %s | targets that far: %d%n", node.getState(), targetsThatFar));
 			edgesSoFar.add(incomingEdge);
 			LDGTrace<S, A> lasso = LDGTrace.lassoFromEdgesWithHonda(edgesSoFar, expandingNode);
 			logger.write(Logger.Level.DETAIL, "Built the following lasso:%n");
@@ -112,12 +173,26 @@ public final class LDGAbstractor<S extends ExprState, A extends ExprAction, P ex
 		}
 		edgesSoFar.add(incomingEdge);
 		pathSoFar.put(expandingNode, totalTargets);
-		Collection<BacktrackResult<S, A>> results = expandStrategy.apply(expandingNode)
-				.map(newEdge -> expandThroughNodeUntilTarget(pathSoFar, newEdge, edgesSoFar, totalTargets))
-				.toList();
-		Optional<BacktrackResult<S, A>> result = results.stream().filter(res -> res.lasso != null).findAny();
-		if (result.isPresent())
-			return result.get();
+		boolean needsTraversing = !expandingNode.isExpanded() || expandingNode
+				.getValidLoopHondas()
+				.stream()
+				.filter(pathSoFar::containsKey)
+				.anyMatch(node -> pathSoFar.get(node) < targetsSoFar);
+		Function<LDGNode<S, A>, Collection<LDGEdge<S, A>>> expandStrategy = needsTraversing
+				? this::expand
+				: n -> Collections.emptySet();
+		Collection<LDGEdge<S, A>> outgoingEdges = expandStrategy.apply(expandingNode);
+		List<BacktrackResult<S, A>> results = new ArrayList<>();
+		for (LDGEdge<S, A> newEdge :
+				outgoingEdges) {
+			BacktrackResult<S, A> result = expandThroughNode(pathSoFar, newEdge, edgesSoFar, totalTargets, stopAtLasso);
+			results.add(result);
+			if (stopAtLasso && !result.lassos.isEmpty())
+				break;
+		}
+		BacktrackResult<S, A> result = combineLassos(results);
+		if (!result.lassos.isEmpty())
+			return result;
 		Collection<LDGNode<S, A>> validLoopHondas = results.stream().map(BacktrackResult::hondas).flatMap(Collection::stream).toList();
 		expandingNode.addValidLoopHondas(validLoopHondas);
 		pathSoFar.remove(expandingNode);
@@ -125,17 +200,17 @@ public final class LDGAbstractor<S extends ExprState, A extends ExprAction, P ex
 		return new BacktrackResult<>(validLoopHondas);
 	}
 
-	private Stream<LDGEdge<S, A>> expand(LDGNode<S, A> expandingNode) {
+	private Collection<LDGEdge<S, A>> expand(LDGNode<S, A> expandingNode) {
+		if (expandingNode.isExpanded())
+			return expandingNode.getOutEdges();
+		expandingNode.setExpanded();
 		S state = expandingNode.getState();
 		return lts.getEnabledActionsFor(state)
 				.stream()
 				.flatMap(action ->
 						createNewNodesAndDrawEdges(expandingNode, state, action)
-				);
-	}
-
-	private Stream<LDGEdge<S, A>> traverse(LDGNode<S, A> expandingNode) {
-		return expandingNode.getOutEdges().stream();
+				)
+				.toList();
 	}
 
 	private Stream<LDGEdge<S, A>> createNewNodesAndDrawEdges(LDGNode<S, A> expandingNode, S state, A action) {
@@ -143,6 +218,7 @@ public final class LDGAbstractor<S extends ExprState, A extends ExprAction, P ex
 				.getTransFunc()
 				.getSuccStates(state, action, prec)
 				.stream()
+				.filter(Predicate.not(State::isBottom))
 				.map(ldg::getOrCreateNode)
 				.map(newNode -> connectTwoNodes(expandingNode, newNode, action));
 	}
@@ -151,19 +227,29 @@ public final class LDGAbstractor<S extends ExprState, A extends ExprAction, P ex
 		return ldg;
 	}
 
-	record BacktrackResult<S extends ExprState, A extends ExprAction> (Set<LDGNode<S, A>> hondas, LDGTrace<S, A> lasso) {
+	record BacktrackResult<S extends ExprState, A extends ExprAction> (Set<LDGNode<S, A>> hondas, List<LDGTrace<S, A>> lassos) {
 		BacktrackResult(Collection<LDGNode<S, A>> hondas) {
-			this(new HashSet<>(hondas), null);
+			this(new HashSet<>(hondas), Collections.emptyList());
 		}
 
 		BacktrackResult() {
-			this(new HashSet<>(0), null);
+			this(Collections.emptySet(), Collections.emptyList());
 		}
 
 		BacktrackResult(LDGTrace<S, A> lasso) {
-			this(new HashSet<>(0), lasso);
+			this(Collections.emptySet(), Collections.singletonList(lasso));
 		}
 
+		BacktrackResult(List<LDGTrace<S, A>> lassos) {
+			this(Collections.emptySet(), lassos);
+		}
+
+	}
+
+	private BacktrackResult<S, A> combineLassos(Collection<BacktrackResult<S, A>> results) {
+		List<LDGTrace<S, A>> lassos = new ArrayList<>();
+		results.forEach(result -> lassos.addAll(result.lassos));
+		return new BacktrackResult<>(lassos);
 	}
 
 }

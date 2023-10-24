@@ -23,8 +23,10 @@ import hu.bme.mit.theta.analysis.expl.ExplState;
 import hu.bme.mit.theta.analysis.expr.ExprAction;
 import hu.bme.mit.theta.analysis.expr.ExprState;
 import hu.bme.mit.theta.analysis.expr.ExprStates;
+import hu.bme.mit.theta.analysis.expr.StmtAction;
 import hu.bme.mit.theta.analysis.expr.refinement.ExprTraceStatus;
 import hu.bme.mit.theta.analysis.expr.refinement.ItpRefutation;
+import hu.bme.mit.theta.analysis.multi.ExprMultiAction;
 import hu.bme.mit.theta.common.container.Containers;
 import hu.bme.mit.theta.common.logging.Logger;
 import hu.bme.mit.theta.common.logging.NullLogger;
@@ -167,7 +169,7 @@ public final class LDGTraceChecker<S extends ExprState, A extends ExprAction> {
 		VarIndexing indexingBeforeLoop = indexings.get(ldgTrace.getTail().size());
 		VarIndexing indexingAfterLoop = indexings.get(trace.length());
 		VarIndexing deltaIndexing = indexingAfterLoop.sub(indexingBeforeLoop);
-		variables.stream().filter(varDecl -> indexingBeforeLoop.get(varDecl) != indexingAfterLoop.get(varDecl)).forEach(usedVariables::add);
+//		variables.stream().filter(varDecl -> indexingBeforeLoop.get(varDecl) != indexingAfterLoop.get(varDecl)).forEach(usedVariables::add);
 		expandUsedVariables(usedVariables);
 		ExplPrec usedVariablesPrecision = ExplPrec.of(usedVariables);
 		int requiredLoops = findSmallestAbstractState(0, BOUND + 1, usedVariablesPrecision);
@@ -175,7 +177,7 @@ public final class LDGTraceChecker<S extends ExprState, A extends ExprAction> {
 			logger.write(Logger.Level.INFO, "Can't check trace within bound %d, using fallback method%n", BOUND);
 			return evaluateLoopCutHondaRepeatability(solver.getModel());
 		}
-		logger.write(Logger.Level.INFO, "Unrolling loop of trace %d times%n", requiredLoops);
+		logger.write(Logger.Level.INFO, "Unrolling loop of trace at most %d times%n", requiredLoops);
 		solver.reset();
 		VarIndexing loopIndexing = VarIndexingFactory.indexing(0);
 		for (int i = 0; i < requiredLoops; i++) {
@@ -184,6 +186,7 @@ public final class LDGTraceChecker<S extends ExprState, A extends ExprAction> {
 			if (solver.check().isUnsat()) {
 				solver.pop();
 				putLoopOnSolver(unreachableMarker, loopIndexing);
+				logger.write(Logger.Level.INFO, "Unrolled loop of trace %d times%n", i + 1);
 				return infeasibleThroughInterpolant(i * ldgTrace.getLoop().size());
 			}
 			loopIndexing = loopIndexing.add(deltaIndexing);
@@ -191,17 +194,16 @@ public final class LDGTraceChecker<S extends ExprState, A extends ExprAction> {
 			VarIndexing finalLoopIndexing = loopIndexing;
 			variables.forEach(variable -> solver.add(unreachableMarker, Eq(PathUtils.unfold(variable.getRef(), VarIndexingFactory.indexing(0)), PathUtils.unfold(variable.getRef(), finalLoopIndexing))));
 			if (solver.check().isSat()) {
+				logger.write(Logger.Level.INFO, "Unrolled loop of trace %d times%n", i + 1);
 				return getItpRefutationFeasible();
 			}
 			solver.pop();
-			//foreach ldg loop statek actionokon
-				//ide jon a findsatindexbol a solverre pakolas, loopindexinget noveljok
-			// ha unsat, interpolans
-			// ha sat, rarakjuk a loop constraintet
-				// ha igy unsat, megyunk tovabb
-				// ha igy sat, cex
 		}
-		throw new RuntimeException("Couldn't check trace within bounds - this shouldnt really happen");
+		///////////////
+		VarIndexing finalLoopIndexing = loopIndexing;
+		variables.forEach(variable -> solver.add(unreachableMarker, Eq(PathUtils.unfold(variable.getRef(), VarIndexingFactory.indexing(0)), PathUtils.unfold(variable.getRef(), finalLoopIndexing))));
+		return infeasibleThroughInterpolant((requiredLoops - 1) * ldgTrace.getLoop().size());
+		///////////////
 	}
 
 	private int findSmallestAbstractState(int i, int bound, ExplPrec usedVariablesPrecision) {
@@ -222,8 +224,6 @@ public final class LDGTraceChecker<S extends ExprState, A extends ExprAction> {
 						.reduce(DomainSize.ONE, DomainSize::multiply)
 				)
 				.reduce(DomainSize.ZERO, DomainSize::add);
-		if (currentSize.getFiniteSize().intValue() == 1)
-			logger.write(Logger.Level.INFO, "Abstract state %s contains 1 concrete state%n", loop.get(i).source().getState());
 		if (currentSize.isInfinite() || currentSize.isBiggerThan(bound))
 			return findSmallestAbstractState(i + 1, bound, usedVariablesPrecision);
 		return findSmallestAbstractState(i + 1, currentSize.getFiniteSize().intValue(), usedVariablesPrecision);
@@ -235,9 +235,11 @@ public final class LDGTraceChecker<S extends ExprState, A extends ExprAction> {
 				.stream()
 				.filter(Predicate.not(usedVariables::contains))
 				.forEach(varDecl -> ldgTrace.getLoop().forEach(edge -> {
-					// itt kene tudni, az action mikor rendel hozza egy valtozohoz a mar meglevokbol - TransFunc?
-					// ha lehet, cast to StmtAction, es kell egy stmtvisitor pl varcollectorstmtvisitor
-					// havocot dobjuk el
+					if (edge.action() instanceof StmtAction action)
+						VarCollectorStmtVisitor.visitAll(action.getStmts(), usedVariables);
+					if (edge.action() instanceof ExprMultiAction<?,?> multiAction && (multiAction.getAction() instanceof StmtAction action))
+							{VarCollectorStmtVisitor.visitAll(action.getStmts(), usedVariables);
+					}
 				}));
 		if (usedVariables.size() > currentSize)
 			return expandUsedVariables(usedVariables);

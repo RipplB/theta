@@ -19,7 +19,10 @@ import com.google.common.base.Objects;
 import hu.bme.mit.theta.analysis.expr.ExprAction;
 import hu.bme.mit.theta.analysis.expr.ExprState;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 
 public final class LDGNode<S extends ExprState, A extends ExprAction> {
@@ -90,7 +93,7 @@ public final class LDGNode<S extends ExprState, A extends ExprAction> {
 
 	@Override
 	public String toString() {
-		return "LDGNode{" +
+		return "#" + id + " LDGNode{" +
 				"state=" + state +
 				", accepting=" + accepting +
 				'}';
@@ -104,8 +107,8 @@ public final class LDGNode<S extends ExprState, A extends ExprAction> {
 		return expanded;
 	}
 
-	public void setExpanded(boolean expanded) {
-		this.expanded = expanded;
+	public void setExpanded() {
+		expanded = true;
 	}
 
 	public Set<LDGNode<S, A>> getValidLoopHondas() {

@@ -33,14 +33,18 @@ public final class ExprMultiAction<L extends ExprAction, R extends ExprAction> e
 		return new ExprMultiAction<>(null, action);
 	}
 
+	public ExprAction getAction() {
+		return getLeftAction() == null ? getRightAction() : getLeftAction();
+	}
+
 	@Override
 	public Expr<BoolType> toExpr() {
-		return getLeftAction() == null ? getRightAction().toExpr() : getLeftAction().toExpr();
+		return getAction().toExpr();
 	}
 
 	@Override
 	public VarIndexing nextIndexing() {
-		return getLeftAction() == null ? getRightAction().nextIndexing() : getLeftAction().nextIndexing();
+		return getAction().nextIndexing();
 	}
 
 	@Override

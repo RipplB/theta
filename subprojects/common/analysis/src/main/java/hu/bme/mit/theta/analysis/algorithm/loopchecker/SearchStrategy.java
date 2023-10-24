@@ -16,5 +16,9 @@
 package hu.bme.mit.theta.analysis.algorithm.loopchecker;
 
 public enum SearchStrategy {
-	DFS
+	DFS, NDFS, FULL;
+
+	public static SearchStrategy defaultValue() {
+		return DFS;
+	}
 }

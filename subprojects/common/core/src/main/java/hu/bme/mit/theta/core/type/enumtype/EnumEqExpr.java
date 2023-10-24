@@ -15,6 +15,7 @@
  */
 package hu.bme.mit.theta.core.type.enumtype;
 
+import com.google.common.base.Objects;
 import hu.bme.mit.theta.core.model.Valuation;
 import hu.bme.mit.theta.core.type.BinaryExpr;
 import hu.bme.mit.theta.core.type.Expr;
@@ -74,5 +75,13 @@ public class EnumEqExpr extends EqExpr<EnumType> {
 	@Override
 	public LitExpr<BoolType> eval(Valuation val) {
 		return EnumLitExpr.eq((EnumLitExpr) getLeftOp().eval(val), (EnumLitExpr) getRightOp().eval(val));
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		EnumEqExpr that = (EnumEqExpr) o;
+		return Objects.equal(getLeftOp(), that.getLeftOp()) && Objects.equal(getRightOp(), that.getRightOp());
 	}
 }

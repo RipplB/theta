@@ -1,5 +1,7 @@
 package hu.bme.mit.theta.common.ltl
 
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.RefinerStrategy
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.SearchStrategy
 import hu.bme.mit.theta.analysis.expr.ExprAction
 import hu.bme.mit.theta.analysis.pred.*
 import hu.bme.mit.theta.analysis.unit.UnitState
@@ -54,6 +56,7 @@ class LtlCheckTestWithCfaPred(
                 arrayOf("wave_flags", "G F(y)", true),
                 arrayOf("wave_flags", "F G(x)", false),
                 arrayOf("indicator", "G (x -> y)", true),
+//                arrayOf("indicator_multiassign", "G (x -> y)", true),
                 arrayOf("indicator", "G (x -> X (not x))", true),
                 arrayOf("indicator", "G (y -> X (not y))", false),
         )
@@ -77,6 +80,7 @@ class LtlCheckTestWithCfaPred(
         )
         val analysis = CfaAnalysis.create(cfa.initLoc, dataAnalysis)
         val lts: CfaLts = CfaSbeLts.getInstance()
+//        val lts: CfaLts = CfaLbeLts.of(cfa.initLoc)
         val refToPrec = RefutationToGlobalCfaPrec(ItpRefToPredPrec(ExprSplitters.atoms()), cfa.initLoc)
         val initFunc = { _: CfaPrec<PredPrec> -> listOf<CfaState<UnitState>>(CfaState.of(cfa.initLoc, UnitState.getInstance())) }
         val variables = cfa.vars
@@ -104,10 +108,12 @@ class LtlCheckTestWithCfaPred(
             stripPrec,
             ltlExpr,
             itpSolver,
-            logger
+            logger,
+            SearchStrategy.DFS,
+            RefinerStrategy.MILANO
         )
 
-        Assert.assertEquals(result, checkResult.isEmpty)
+        Assert.assertEquals(result, checkResult.isSafe)
     }
 
 }

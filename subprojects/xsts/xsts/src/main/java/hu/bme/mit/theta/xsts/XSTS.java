@@ -40,6 +40,7 @@ public final class XSTS {
 
     private final Expr<BoolType> initFormula;
     private final Expr<BoolType> prop;
+    private final String ltlProp;
 
     public NonDetStmt getInit() {
         return init;
@@ -69,9 +70,17 @@ public final class XSTS {
         return ctrlVars;
     }
 
+    public String getLtlProp() { return ltlProp; }
+
     public XSTS(final Set<VarDecl<?>> ctrlVars,
                 final NonDetStmt init, final NonDetStmt tran, final NonDetStmt env,
                 final Expr<BoolType> initFormula, final Expr<BoolType> prop) {
+        this(ctrlVars, init, tran, env, initFormula, prop, null);
+    }
+
+    public XSTS(final Set<VarDecl<?>> ctrlVars,
+                final NonDetStmt init, final NonDetStmt tran, final NonDetStmt env,
+                final Expr<BoolType> initFormula, final Expr<BoolType> prop, final String ltlProp) {
         this.tran = checkNotNull(tran);
         this.init = checkNotNull(init);
         this.env = checkNotNull(env);
@@ -86,6 +95,7 @@ public final class XSTS {
         tmpVars.addAll(ExprUtils.getVars(initFormula));
         tmpVars.addAll(ExprUtils.getVars(prop));
         this.vars = Collections.unmodifiableCollection(tmpVars);
+        this.ltlProp = ltlProp;
     }
 
 }

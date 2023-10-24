@@ -50,7 +50,6 @@ import java.io.InputStream;
 import java.io.SequenceInputStream;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.function.Predicate;
 
 import static hu.bme.mit.theta.core.type.booltype.BoolExprs.True;
@@ -106,8 +105,8 @@ public class LDGAbstractorCheckingTest {
 		final AcceptancePredicate<XstsState<ExplState>, XstsAction> target = AcceptancePredicate.ofStatePredicate(statePredicate);
 		final ExplPrec precision = new XstsAllVarsInitPrec().createExpl(xsts);
 		var abstractor = LDGAbstractor.create(analysis, lts, target, new ConsoleLogger(Logger.Level.DETAIL));
-		Optional<LDGTrace<XstsState<ExplState>, XstsAction>> trace = abstractor.onTheFlyCheck(precision, SearchStrategy.DFS);
-		Assert.assertEquals(isLassoPresent, trace.isPresent());
+		Collection<LDGTrace<XstsState<ExplState>, XstsAction>> trace = abstractor.onTheFlyCheck(precision, SearchStrategy.DFS);
+		Assert.assertEquals(isLassoPresent, !trace.isEmpty());
 	}
 
 	private void testWithCfa() throws IOException {
@@ -119,8 +118,8 @@ public class LDGAbstractorCheckingTest {
 		Predicate<CfaState<ExplState>> statePredicate = cfaState -> cfaState.getLoc().getName().equals(acceptingLocationName);
 		AcceptancePredicate<CfaState<ExplState>, CfaAction> target = AcceptancePredicate.ofStatePredicate(statePredicate);
 		LDGAbstractor<CfaState<ExplState>, CfaAction, CfaPrec<ExplPrec>> abstractor = LDGAbstractor.create(analysis, lts, target, new ConsoleLogger(Logger.Level.VERBOSE));
-		Optional<LDGTrace<CfaState<ExplState>, CfaAction>> trace = abstractor.onTheFlyCheck(precision, SearchStrategy.DFS);
-		Assert.assertEquals(isLassoPresent, trace.isPresent());
+		Collection<LDGTrace<CfaState<ExplState>, CfaAction>> trace = abstractor.onTheFlyCheck(precision, SearchStrategy.DFS);
+		Assert.assertEquals(isLassoPresent, !trace.isEmpty());
 	}
 
 }

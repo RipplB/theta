@@ -113,7 +113,7 @@ public final class LDGTrace<S extends ExprState, A extends ExprAction> {
 		edges.addAll(tail);
 		edges.addAll(loop);
 		List<S> states = new ArrayList<>(edges.size() + 1);
-		states.add(tail.getFirst().source().getState());
+		states.add(edges.get(0).source().getState());
 		edges.stream()
 				.map(LDGEdge::target)
 				.map(LDGNode::getState)

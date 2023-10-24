@@ -15,6 +15,7 @@
  */
 plugins {
     id("java-common")
+    id("kotlin-common")
 }
 
 dependencies {
@@ -23,5 +24,8 @@ dependencies {
     implementation(project(":theta-core"))
     implementation(project(":theta-solver"))
     implementation(project(":theta-xsts"))
+    implementation(project(":theta-cfa"))
+    implementation(project(":theta-cfa-analysis"))
+    implementation(project(":theta-ltl"))
     testImplementation(project(":theta-solver-z3"))
 }

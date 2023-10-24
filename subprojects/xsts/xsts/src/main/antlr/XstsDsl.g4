@@ -6,7 +6,8 @@ xsts:
     tran=tranSet
     init=initSet
     env=envSet
-    PROP LCURLY prop=expr RCURLY;
+    PROP LCURLY prop=expr RCURLY
+    ltl+=ltlexpr?;
 
 // D E C L A R A T I O N S
 
@@ -383,6 +384,9 @@ ENV
     ;
 
 
+ltlexpr
+    : LTL LCURLY ltl=.* RCURLY;
+
 // B A S I C   T O K E N S
 
 DP
@@ -395,6 +399,10 @@ EQUALS
 
 PROP
     :   'prop'
+    ;
+
+LTL
+    :   'ltl'
     ;
 
 SEMICOLON
@@ -452,3 +460,5 @@ COMMENT
 LINE_COMMENT
     :   '//' ~[\r\n]* -> skip
     ;
+
+ANYSTRING : .+? ;

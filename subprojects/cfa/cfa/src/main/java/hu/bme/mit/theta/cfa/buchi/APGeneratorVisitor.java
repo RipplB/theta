@@ -20,6 +20,8 @@ import hu.bme.mit.theta.cfa.dsl.gen.LTLGrammarParser;
 import hu.bme.mit.theta.core.decl.VarDecl;
 import hu.bme.mit.theta.core.type.Expr;
 import hu.bme.mit.theta.core.type.booltype.BoolType;
+import hu.bme.mit.theta.core.type.enumtype.EnumLitExpr;
+import hu.bme.mit.theta.core.type.enumtype.EnumType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,12 +34,12 @@ import static hu.bme.mit.theta.core.type.inttype.IntExprs.Mod;
 
 public class APGeneratorVisitor extends LTLGrammarBaseVisitor<Expr> {
 
-	Map<String, VarDecl<?>> vars;
-	Map<String, Integer> literals;
+	private final Map<String, VarDecl<?>> vars;
+	private final Map<String, EnumType> enumTypes;
 
-	public APGeneratorVisitor(Map<String, VarDecl<?>> vars, Map<String, Integer> literals) {
+	public APGeneratorVisitor(Map<String, VarDecl<?>> vars, Map<String, EnumType> enumTypes) {
 		this.vars = vars;
-		this.literals = literals;
+		this.enumTypes = enumTypes;
 	}
 
 	@Override
@@ -181,6 +183,8 @@ public class APGeneratorVisitor extends LTLGrammarBaseVisitor<Expr> {
 			return visitBoolLitExpr(ctx.boolLitExpr());
 		} else if (ctx.intLitExpr() != null) {
 			return visitIntLitExpr(ctx.intLitExpr());
+		} else if (ctx.enumLitExpr() != null) {
+			return visitEnumLitExpr(ctx.enumLitExpr());
 		} else return visitParenExpr(ctx.parenExpr());
 	}
 
@@ -202,8 +206,12 @@ public class APGeneratorVisitor extends LTLGrammarBaseVisitor<Expr> {
 	}
 
 	@Override
+	public Expr visitEnumLitExpr(LTLGrammarParser.EnumLitExprContext ctx) {
+		return EnumLitExpr.of(enumTypes.get(ctx.type.getText()), ctx.lit.getText());
+	}
+
+	@Override
 	public Expr visitVariable(LTLGrammarParser.VariableContext ctx) {
-		if (literals.containsKey(ctx.name.getText())) return Int(literals.get(ctx.name.getText()));
 		VarDecl decl = vars.get(ctx.name.getText());
 		if (decl == null) System.out.println("Variable [" + ctx.name.getText() + "] not found");
 		return decl.getRef();

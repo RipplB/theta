@@ -26,9 +26,11 @@ import hu.bme.mit.theta.core.type.enumtype.EnumType;
 import hu.bme.mit.theta.core.utils.ExprUtils;
 import hu.bme.mit.theta.xsts.XSTS;
 import hu.bme.mit.theta.xsts.dsl.gen.XstsDslParser.XstsContext;
+import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static hu.bme.mit.theta.core.type.abstracttype.AbstractExprs.Eq;
@@ -141,7 +143,8 @@ public class XstsSpecification implements DynamicScope {
         final Expr<BoolType> prop = cast(
                 new XstsExpression(this, typeTable, context.prop).instantiate(env), Bool());
 
-        return new XSTS(ctrlVars, initSet, tranSet, envSet, initFormula, prop);
+
+        return new XSTS(ctrlVars, initSet, tranSet, envSet, initFormula, prop, getLtl());
     }
 
     @Override
@@ -153,4 +156,12 @@ public class XstsSpecification implements DynamicScope {
     public void declareAll(Collection<? extends Symbol> symbols) {
         symbolTable.addAll(symbols);
     }
+
+    private String getLtl() {
+        if (context.ltl.isEmpty())
+            return null;
+        List<ParseTree> children = context.ltl.get(0).children;
+        return children.stream().limit(children.size() - 1L).skip(2).map(ParseTree::getText).collect(Collectors.joining(" "));
+    }
+
 }

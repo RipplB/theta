@@ -1,5 +1,7 @@
 package hu.bme.mit.theta.common.ltl
 
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.RefinerStrategy
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.SearchStrategy
 import hu.bme.mit.theta.analysis.expl.ExplAnalysis
 import hu.bme.mit.theta.analysis.expl.ExplPrec
 import hu.bme.mit.theta.analysis.expl.ExplState
@@ -94,10 +96,12 @@ class LtlCheckTestWithCfa(
             stripPrec,
             ltlExpr,
             itpSolver,
-            logger
+            logger,
+            SearchStrategy.DFS,
+            RefinerStrategy.MILANO
         )
 
-        Assert.assertEquals(result, checkResult.isEmpty)
+        Assert.assertEquals(result, checkResult.isSafe)
     }
 
 }

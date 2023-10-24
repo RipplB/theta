@@ -17,7 +17,6 @@ package hu.bme.mit.theta.analysis.algorithm.loopchecker;
 
 import hu.bme.mit.theta.analysis.Analysis;
 import hu.bme.mit.theta.analysis.LTS;
-import hu.bme.mit.theta.analysis.Trace;
 import hu.bme.mit.theta.analysis.expr.ExprStatePredicate;
 import hu.bme.mit.theta.analysis.expr.refinement.ItpRefutation;
 import hu.bme.mit.theta.analysis.expr.refinement.RefutationToPrec;
@@ -53,7 +52,6 @@ import java.io.InputStream;
 import java.io.SequenceInputStream;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.function.Predicate;
 
 import static hu.bme.mit.theta.core.type.booltype.BoolExprs.True;
@@ -121,8 +119,8 @@ public class LDGCegarVerifierTest {
 		final LDGCegarVerifier<XstsState<PredState>, XstsAction, PredPrec> verifier = LDGCegarVerifier.of(analysis, lts, target, logger, itpSolver, new ItpRefToPredPrec(ExprSplitters.atoms()));
 
 		final PredPrec precision = PredPrec.of();
-		Optional<Trace<XstsState<PredState>, XstsAction>> result = verifier.verify(precision, SearchStrategy.DFS, RefinerStrategy.MILANO);
-		Assert.assertEquals(this.result, result.isPresent());
+		var result = verifier.verify(precision, SearchStrategy.DFS, RefinerStrategy.MILANO);
+		Assert.assertEquals(this.result, result.isUnsafe());
 	}
 
 	private void testWithCfa() throws IOException {
@@ -137,7 +135,7 @@ public class LDGCegarVerifierTest {
 		final LDGCegarVerifier<CfaState<PredState>, CfaAction, CfaPrec<PredPrec>> verifier = LDGCegarVerifier.of(analysis, lts, target, logger, itpSolver, cfaRefToPrec);
 
 		final GlobalCfaPrec<PredPrec> prec = GlobalCfaPrec.create(PredPrec.of());
-		Optional<Trace<CfaState<PredState>, CfaAction>> res = verifier.verify(prec, SearchStrategy.DFS, RefinerStrategy.MILANO);
-		Assert.assertEquals(result, res.isPresent());
+		var res = verifier.verify(prec, SearchStrategy.DFS, RefinerStrategy.MILANO);
+		Assert.assertEquals(result, res.isUnsafe());
 	}
 }

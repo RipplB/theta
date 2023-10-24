@@ -15,10 +15,15 @@
  */
 package hu.bme.mit.theta.analysis.algorithm.loopchecker;
 
+import com.google.common.base.Stopwatch;
 import hu.bme.mit.theta.analysis.Analysis;
 import hu.bme.mit.theta.analysis.LTS;
 import hu.bme.mit.theta.analysis.Prec;
 import hu.bme.mit.theta.analysis.Trace;
+import hu.bme.mit.theta.analysis.algorithm.ARG;
+import hu.bme.mit.theta.analysis.algorithm.SafetyChecker;
+import hu.bme.mit.theta.analysis.algorithm.SafetyResult;
+import hu.bme.mit.theta.analysis.algorithm.cegar.CegarStatistics;
 import hu.bme.mit.theta.analysis.algorithm.cegar.RefinerResult;
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.ldg.LDG;
 import hu.bme.mit.theta.analysis.expr.ExprAction;
@@ -30,16 +35,17 @@ import hu.bme.mit.theta.core.type.Expr;
 import hu.bme.mit.theta.core.type.booltype.BoolType;
 import hu.bme.mit.theta.solver.ItpSolver;
 
-import java.util.Optional;
+import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 
-public final class LDGCegarVerifier<S extends ExprState, A extends ExprAction, P extends Prec> {
+public final class LDGCegarVerifier<S extends ExprState, A extends ExprAction, P extends Prec> implements SafetyChecker<S, A, P> {
 	private final LDGAbstractor<S, A, P> abstractor;
-	private final LDGTraceRefiner<S, A, P> refiner;
+	private final LDGTraceRefinerSupplier<S, A, P> refinerFactory;
 	private final Logger logger;
 
-	private LDGCegarVerifier(LDGAbstractor<S, A, P> abstractor, LDGTraceRefiner<S, A, P> refiner, Logger logger) {
+	private LDGCegarVerifier(LDGAbstractor<S, A, P> abstractor, LDGTraceRefinerSupplier<S, A, P> refinerFactory, Logger logger) {
 		this.abstractor = abstractor;
-		this.refiner = refiner;
+		this.refinerFactory = refinerFactory;
 		this.logger = logger;
 	}
 
@@ -50,7 +56,7 @@ public final class LDGCegarVerifier<S extends ExprState, A extends ExprAction, P
 			Logger logger,
 			ItpSolver solver,
 			RefutationToPrec<P, ItpRefutation> refToPrec) {
-		return new LDGCegarVerifier<>(LDGAbstractor.create(analysis, lts, target, logger), LDGTraceRefiner.create(solver, refToPrec, logger), logger);
+		return new LDGCegarVerifier<>(LDGAbstractor.create(analysis, lts, target, logger), LDGTraceRefinerSupplier.create(solver, refToPrec, logger), logger);
 	}
 
 	public static <S extends ExprState, A extends ExprAction, P extends Prec> LDGCegarVerifier<S, A, P> of(
@@ -61,31 +67,46 @@ public final class LDGCegarVerifier<S extends ExprState, A extends ExprAction, P
 			ItpSolver solver,
 			Expr<BoolType> init,
 			RefutationToPrec<P, ItpRefutation> refToPrec) {
-		return new LDGCegarVerifier<>(LDGAbstractor.create(analysis, lts, target, logger), LDGTraceRefiner.create(solver, init, refToPrec, logger), logger);
+		return new LDGCegarVerifier<>(LDGAbstractor.create(analysis, lts, target, logger), LDGTraceRefinerSupplier.create(solver, refToPrec, init, logger), logger);
 	}
 
-	public Optional<Trace<S, A>> verify(P initialPrecision, SearchStrategy searchStrategy, RefinerStrategy refinerStrategy) {
+	public SafetyResult<S, A> verify(P initialPrecision, SearchStrategy searchStrategy, RefinerStrategy refinerStrategy) {
+		ARG<S, A> mockArg = ARG.create(abstractor.analysis.getPartialOrd());
 		int i = 1;
 		P currentPrecision = initialPrecision;
+		LDGTraceRefiner<S, A, P> refiner = refinerFactory.createRecommended(searchStrategy);
+		long abstractorTime = 0;
+		long refinerTime = 0;
+		final Stopwatch stopwatch = Stopwatch.createStarted();
 		while (true) {
-			logger.write(Logger.Level.MAINSTEP, "%d. iteration: Abstracting with precision %s%n", i++, currentPrecision);
-			Optional<LDGTrace<S, A>> abstractResult = abstractor.onTheFlyCheck(currentPrecision, searchStrategy);
+			logger.write(Logger.Level.MAINSTEP, "%d. iteration: Abstracting with precision %s%n", i, currentPrecision);
+			final long abstractorStartTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+			Collection<LDGTrace<S, A>> abstractResult = abstractor.onTheFlyCheck(currentPrecision, searchStrategy);
+			abstractorTime += stopwatch.elapsed(TimeUnit.MILLISECONDS) - abstractorStartTime;
 			if (abstractResult.isEmpty()) {
 				logger.write(Logger.Level.RESULT, "Abstractor found no abstract counterexample%n");
-				return Optional.empty();
+				return SafetyResult.safe(mockArg, new CegarStatistics(stopwatch.elapsed(TimeUnit.MILLISECONDS),
+						abstractorTime,
+						refinerTime, i));
 			}
-			LDGTrace<S, A> abstractTrace = abstractResult.get();
-			logger.write(Logger.Level.MAINSTEP, "Abstract counterexample found%n");
-			abstractTrace.print(logger, Logger.Level.DETAIL);
-			RefinerResult<S, A, P> refinerResult = refiner.check(abstractTrace, currentPrecision, refinerStrategy);
+			logger.write(Logger.Level.MAINSTEP, "Abstract counterexample(s) found%n");
+			final long refinerStartTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+			RefinerResult<S, A, P> refinerResult = refiner.check(abstractResult, currentPrecision, refinerStrategy);
+			refinerTime += stopwatch.elapsed(TimeUnit.MILLISECONDS) - refinerStartTime;
 			if (refinerResult.isUnsafe()) {
 				logger.write(Logger.Level.RESULT, "Refiner found counterexample to be feasible%n");
 				Trace<S, A> counterexample = refinerResult.asUnsafe().getCex();
 				logger.write(Logger.Level.DETAIL, "%s%n", counterexample);
-				return Optional.of(counterexample);
+				return SafetyResult.unsafe(counterexample, mockArg, new CegarStatistics(stopwatch.elapsed(TimeUnit.MILLISECONDS),
+						abstractorTime,
+						refinerTime, i));
 			}
-			logger.write(Logger.Level.MAINSTEP, "Counterexample is infeasible, continue with refined precision%n");
+			if (refinerResult.asSpurious().getRefinedPrec().equals(currentPrecision))
+				throw new RuntimeException("Precision didn't change");
 			currentPrecision = refinerResult.asSpurious().getRefinedPrec();
+
+			logger.write(Logger.Level.MAINSTEP, "Counterexample is infeasible, continue with refined precision%n");
+			++i;
 		}
 	}
 
@@ -93,4 +114,8 @@ public final class LDGCegarVerifier<S extends ExprState, A extends ExprAction, P
 		return abstractor.getLdg();
 	}
 
+	@Override
+	public SafetyResult<S, A> check(P prec) {
+		return verify(prec, SearchStrategy.defaultValue(), RefinerStrategy.defaultValue());
+	}
 }

@@ -22,6 +22,8 @@ import com.google.common.base.Stopwatch;
 import hu.bme.mit.theta.analysis.Trace;
 import hu.bme.mit.theta.analysis.algorithm.SafetyResult;
 import hu.bme.mit.theta.analysis.algorithm.cegar.CegarStatistics;
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.RefinerStrategy;
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.SearchStrategy;
 import hu.bme.mit.theta.analysis.algorithm.runtimecheck.ArgCexCheckHandler;
 import hu.bme.mit.theta.analysis.expr.refinement.PruneStrategy;
 import hu.bme.mit.theta.analysis.utils.ArgVisualizer;
@@ -70,8 +72,14 @@ public class XstsCli {
     @Parameter(names = {"--refinement"}, description = "Refinement strategy")
     Refinement refinement = Refinement.SEQ_ITP;
 
+    @Parameter(names = {"--refinement-ltl"}, description = "Refinement strategy for LTL checking")
+    RefinerStrategy refinerStrategy = RefinerStrategy.defaultValue();
+
     @Parameter(names = {"--search"}, description = "Search strategy")
     Search search = Search.BFS;
+
+    @Parameter(names = {"--search-ltl"}, description = "Search strategy for LTL checking")
+    SearchStrategy searchStrategy = SearchStrategy.defaultValue();
 
     @Parameter(names = {"--predsplit"}, description = "Predicate splitting")
     PredSplit predSplit = PredSplit.WHOLE;
@@ -80,8 +88,16 @@ public class XstsCli {
     String model;
 
     @Parameter(names = {
-            "--property"}, description = "Input property as a string or a file (*.prop)", required = true)
+            "--property"}, description = "Input property as a string")
     String property;
+
+    @Parameter(names = {
+            "--property-file"}, description = "Input property as a file (*.prop or *.ltl) - should contain only either a prop{} or ltl{} block")
+    File propertyFile;
+
+    @Parameter(names = "--ltl",
+            description = "Do an LTL check instead of reachability - handles property parameter as LTL input (supporting *.ltl file extension)")
+    boolean ltl = false;
 
     @Parameter(names = {"--initialmarking"}, description = "Initial marking of the Petri net")
     String initialMarking = "";
@@ -215,25 +231,45 @@ public class XstsCli {
     }
 
     private XSTS loadModel() throws Exception {
+        if (model.endsWith(".pnml"))
+            return loadPetriModel();
+        FileInputStream modelStream = new FileInputStream(model);
+        InputStream propStream = propertyStream();
+        XSTS xsts;
+        if (propStream == null)
+            xsts = XstsDslManager.createXsts(modelStream);
+        else {
+            xsts = XstsDslManager.createXsts(new SequenceInputStream(modelStream, propStream));
+            propStream.close();
+        }
+        modelStream.close();
+        return xsts;
+    }
+
+    private InputStream propertyStream() throws Exception {
+        if (property == null && propertyFile == null)
+            return null;
+        InputStream rawPropStream = null;
+        if (property != null)
+            rawPropStream = new ByteArrayInputStream((String.format("%s { %s }", ltl ? "ltl" : "prop", property)).getBytes());
+        if (propertyFile != null)
+            rawPropStream = new FileInputStream(propertyFile);
+        if (ltl)
+            return new SequenceInputStream(new ByteArrayInputStream(("prop { true }").getBytes()), rawPropStream);
+        return rawPropStream;
+    }
+
+    private XSTS loadPetriModel() throws Exception {
+        if (property == null && propertyFile == null)
+            throw new Exception("Either property or propertyFile needs to be specified for pnml models");
         InputStream propStream = null;
         try {
-            if (property.endsWith(".prop")) {
-                propStream = new FileInputStream(property);
-            } else {
+            if (propertyFile != null)
+                propStream = new FileInputStream(propertyFile);
+            else
                 propStream = new ByteArrayInputStream(("prop { " + property + " }").getBytes());
-            }
-
-            if (model.endsWith(".pnml")) {
-                final PnmlNet pnmlNet = PnmlParser.parse(model, initialMarking);
-                return PnmlToXSTS.createXSTS(pnmlNet, propStream);
-            } else {
-
-                try (SequenceInputStream inputStream = new SequenceInputStream(
-                        new FileInputStream(model), propStream)) {
-                    return XstsDslManager.createXsts(inputStream);
-                }
-            }
-
+            final PnmlNet pnmlNet = PnmlParser.parse(model, initialMarking);
+            return PnmlToXSTS.createXSTS(pnmlNet, propStream);
         } catch (Exception ex) {
             throw new Exception("Could not parse XSTS: " + ex.getMessage(), ex);
         } finally {
@@ -262,7 +298,7 @@ public class XstsCli {
             return new XstsConfigBuilder(domain, refinement, abstractionSolverFactory,
                     refinementSolverFactory)
                     .maxEnum(maxEnum).autoExpl(autoExpl).initPrec(initPrec).pruneStrategy(pruneStrategy)
-                    .search(search).predSplit(predSplit).optimizeStmts(optimizeStmts).logger(logger)
+                    .search(search).predSplit(predSplit).optimizeStmts(optimizeStmts).logger(logger).ltl(ltl, xsts.getLtlProp()).searchStrategy(searchStrategy).refinerStrategy(refinerStrategy)
                     .build(xsts);
         } catch (final Exception ex) {
             throw new Exception("Could not create configuration: " + ex.getMessage(), ex);
@@ -271,23 +307,29 @@ public class XstsCli {
 
     private void printResult(final SafetyResult<?, ?> status, final XSTS sts,
                              final long totalTimeMs) {
-        final CegarStatistics stats = (CegarStatistics) status.getStats().get();
         if (benchmarkMode) {
-            writer.cell(status.isSafe());
+            final CegarStatistics stats = (CegarStatistics) status.getStats().get();
+            writer.cell(status.isSafe() ? "safe" : "unsafe");
             writer.cell(totalTimeMs);
             writer.cell(stats.getAlgorithmTimeMs());
             writer.cell(stats.getAbstractorTimeMs());
             writer.cell(stats.getRefinerTimeMs());
             writer.cell(stats.getIterations());
-            writer.cell(status.getArg().size());
-            writer.cell(status.getArg().getDepth());
-            writer.cell(status.getArg().getMeanBranchingFactor());
+            if (!ltl) {
+                writer.cell(status.getArg().size());
+                writer.cell(status.getArg().getDepth());
+                writer.cell(status.getArg().getMeanBranchingFactor());
+            }
             if (status.isUnsafe()) {
                 writer.cell(status.asUnsafe().getTrace().length() + "");
             } else {
                 writer.cell("");
             }
             writer.cell(sts.getVars().size());
+            if (ltl) {
+                writer.cell(searchStrategy);
+                writer.cell(refinerStrategy);
+            }
             writer.newRow();
         }
     }

@@ -15,7 +15,7 @@
  */
 package hu.bme.mit.theta.analysis.waitlist;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import hu.bme.mit.theta.common.Utils;
 
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.stream.Stream;
 
-import hu.bme.mit.theta.common.Utils;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * LIFO (Last In First Out) waitlist. Items are removed in the reverse order as they were added.
@@ -46,7 +46,7 @@ public final class LifoWaitlist<T> implements Waitlist<T> {
 
     @Override
     public void add(final T item) {
-        items.push(item);
+        items.add(item);
     }
 
     @Override

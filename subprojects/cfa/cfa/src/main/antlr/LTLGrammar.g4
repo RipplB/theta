@@ -82,6 +82,7 @@ negExpr:
 primaryExpr:
 	boolLitExpr|
 	intLitExpr|
+	enumLitExpr|
 	parenExpr
 ;
 
@@ -95,6 +96,10 @@ parenExpr:
 
 intLitExpr:
 	value=INTLIT
+;
+
+enumLitExpr:
+    type=ID DOT lit=ID
 ;
 
 variable:
@@ -128,5 +133,6 @@ X_OP: 'X';
 INTLIT: [0-9]+;
 BOOLLIT: 'true' | 'false';
 ID: [a-zA-Z][a-zA-Z0-9_]*;
+DOT: '.';
 WS: (' '| '\t' | '\n' | '\r') -> skip;
 
