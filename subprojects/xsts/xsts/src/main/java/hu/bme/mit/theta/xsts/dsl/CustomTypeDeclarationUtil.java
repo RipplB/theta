@@ -18,6 +18,7 @@ package hu.bme.mit.theta.xsts.dsl;
 import hu.bme.mit.theta.common.dsl.DynamicScope;
 import hu.bme.mit.theta.common.dsl.Env;
 import hu.bme.mit.theta.common.dsl.Symbol;
+import hu.bme.mit.theta.core.type.enumtype.EnumLitExpr;
 import hu.bme.mit.theta.core.type.enumtype.EnumType;
 
 import java.util.Optional;
@@ -32,6 +33,14 @@ public final class CustomTypeDeclarationUtil {
 			var customSymbol = XstsCustomLiteralSymbol.copyWithName(fNameCustLitSymbol, literal);
 			Optional<? extends Symbol> optionalSymbol = currentScope.resolve(literal);
 			if (optionalSymbol.isPresent()) {
+				if (env.isDefined(optionalSymbol.get())){
+					if (env.eval(optionalSymbol.get()) instanceof EnumLitExpr enumLitExpr) {
+						if (enumLitExpr.getType().equals(enumType)) {
+							return;
+						}
+					}
+					throw new RuntimeException();
+				}
 				env.define(optionalSymbol.get(), customSymbol.instantiate());
 			} else {
 				currentScope.declare(customSymbol);

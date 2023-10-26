@@ -75,4 +75,9 @@ public final class EnumLitExpr extends NullaryExpr<EnumType> implements LitExpr<
 	public int hashCode() {
 		return Objects.hashCode(type, value);
 	}
+
+	public String getLongName() {
+		return type.longNameOf(value);
+	}
+
 }

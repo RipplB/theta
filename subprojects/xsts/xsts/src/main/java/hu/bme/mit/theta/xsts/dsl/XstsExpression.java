@@ -182,10 +182,15 @@ final class XstsExpression {
                 final Expr<?> rightOp;
                 try {
                     leftOp = ctx.leftOp.accept(this);
-                } catch (ParseException e) {
+                } catch (UnknownLiteralException e) {
                     // It's possible that the left side is an enum literal
                     // So we have to parse enum type from the right side first
-                    leftOp = ctx.rightOp.accept(this);
+                    try {
+                        leftOp = ctx.rightOp.accept(this);
+                    } catch (UnknownLiteralException ex) {
+                        boolean areStringsEqual = ctx.leftOp.getText().equals(ctx.rightOp.getText());
+                        return areStringsEqual ^ ctx.oper.getType() == EQ ? False() : True();
+                    }
                     inverse = true;
                 }
                 if (leftOp.getType() instanceof EnumType enumType) {
@@ -500,7 +505,7 @@ final class XstsExpression {
         public Expr<?> visitIdExpr(final IdExprContext ctx) {
             Optional<? extends Symbol> optSymbol = currentScope.resolve(ctx.id.getText());
             if (optSymbol.isEmpty()) {
-                throw new ParseException(ctx,
+                throw new UnknownLiteralException(ctx,
                         "Identifier '" + ctx.id.getText() + "' cannot be resolved");
             }
             final Symbol symbol = optSymbol.get();

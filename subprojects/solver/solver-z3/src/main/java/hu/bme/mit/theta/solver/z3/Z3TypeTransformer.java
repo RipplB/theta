@@ -22,6 +22,7 @@ import hu.bme.mit.theta.core.type.Type;
 import hu.bme.mit.theta.core.type.arraytype.ArrayType;
 import hu.bme.mit.theta.core.type.booltype.BoolType;
 import hu.bme.mit.theta.core.type.bvtype.BvType;
+import hu.bme.mit.theta.core.type.enumtype.EnumLitExpr;
 import hu.bme.mit.theta.core.type.enumtype.EnumType;
 import hu.bme.mit.theta.core.type.fptype.FpType;
 import hu.bme.mit.theta.core.type.inttype.IntType;
@@ -41,8 +42,9 @@ final class Z3TypeTransformer {
     private final Set<com.microsoft.z3.BitVecSort> bvSorts;
     private final Set<com.microsoft.z3.FPSort> fpSorts;
     private final Map<String, EnumSort> enumSorts;
+    private final Map<String, EnumLitExpr> enumLitExprMap;
 
-    Z3TypeTransformer(final Z3TransformationManager transformer, final Context context) {
+    Z3TypeTransformer(final Z3TransformationManager transformer, final Map<String, EnumLitExpr> enumLitExprMap, final Context context) {
         this.context = context;
         this.transformer = transformer;
 
@@ -52,6 +54,7 @@ final class Z3TypeTransformer {
         bvSorts = Sets.synchronizedNavigableSet(new TreeSet<>());
         fpSorts = Sets.synchronizedNavigableSet(new TreeSet<>());
         enumSorts = new HashMap<>();
+        this.enumLitExprMap = enumLitExprMap;
     }
 
     public com.microsoft.z3.Sort toSort(final Type type) {
@@ -104,7 +107,8 @@ final class Z3TypeTransformer {
     }
 
     private EnumSort createEnumSort(EnumType enumType) {
-        return context.mkEnumSort(enumType.getName(), enumType.getValues().stream().map(lit -> EnumType.makeLongName(enumType, lit)).toArray(String[]::new));
+        enumType.getLiterals().forEach(enumLitExpr -> enumLitExprMap.put(enumLitExpr.getLongName(), enumLitExpr));
+        return context.mkEnumSort(enumType.getName(), enumType.getValues().stream().map(enumType::longNameOf).toArray(String[]::new));
     }
 
 }

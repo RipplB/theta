@@ -32,7 +32,6 @@ import hu.bme.mit.theta.common.CliUtils;
 import hu.bme.mit.theta.common.OsHelper;
 import hu.bme.mit.theta.common.logging.ConsoleLogger;
 import hu.bme.mit.theta.common.logging.Logger;
-import hu.bme.mit.theta.common.logging.NullLogger;
 import hu.bme.mit.theta.common.table.BasicTableWriter;
 import hu.bme.mit.theta.common.table.TableWriter;
 import hu.bme.mit.theta.common.visualization.Graph;
@@ -170,7 +169,8 @@ public class XstsCli {
     private void run() {
         try {
             JCommander.newBuilder().addObject(this).programName(JAR_NAME).build().parse(args);
-            logger = benchmarkMode ? NullLogger.getInstance() : new ConsoleLogger(logLevel);
+//            logger = benchmarkMode ? NullLogger.getInstance() : new ConsoleLogger(logLevel);
+            logger = new ConsoleLogger(logLevel);
         } catch (final ParameterException ex) {
             System.out.println("Invalid parameters, details:");
             System.out.println(ex.getMessage());
@@ -337,6 +337,7 @@ public class XstsCli {
     private void printError(final Throwable ex) {
         final String message = ex.getMessage() == null ? "" : ex.getMessage();
         if (benchmarkMode) {
+            ex.printStackTrace();
             writer.cell("[EX] " + ex.getClass().getSimpleName() + ": " + message);
             writer.newRow();
         } else {

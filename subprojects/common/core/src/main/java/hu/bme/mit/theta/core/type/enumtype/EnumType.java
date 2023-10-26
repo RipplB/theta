@@ -22,10 +22,7 @@ import hu.bme.mit.theta.core.type.abstracttype.EqExpr;
 import hu.bme.mit.theta.core.type.abstracttype.Equational;
 import hu.bme.mit.theta.core.type.abstracttype.NeqExpr;
 
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -86,6 +83,14 @@ public final class EnumType implements Equational<EnumType>, Type {
 	public int getIntValue(String literal) {
 		checkArgument(literals.containsKey(literal), String.format("Enum type %s does not contain literal '%s'", name, literal));
 		return literals.get(literal);
+	}
+
+	public List<EnumLitExpr> getLiterals() {
+		return literals.keySet().stream().map(lit -> EnumLitExpr.of(this, lit)).toList();
+	}
+
+	public String longNameOf(String literal) {
+		return makeLongName(this, literal);
 	}
 
 }

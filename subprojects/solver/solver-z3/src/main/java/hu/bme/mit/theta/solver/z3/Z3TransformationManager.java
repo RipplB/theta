@@ -16,10 +16,12 @@
 package hu.bme.mit.theta.solver.z3;
 
 import com.microsoft.z3.Context;
-
 import hu.bme.mit.theta.core.decl.Decl;
 import hu.bme.mit.theta.core.type.Expr;
 import hu.bme.mit.theta.core.type.Type;
+import hu.bme.mit.theta.core.type.enumtype.EnumLitExpr;
+
+import java.util.Map;
 
 final class Z3TransformationManager {
 
@@ -27,8 +29,8 @@ final class Z3TransformationManager {
     private final Z3DeclTransformer declTransformer;
     private final Z3ExprTransformer exprTransformer;
 
-    public Z3TransformationManager(final Z3SymbolTable symbolTable, final Context context) {
-        this.typeTransformer = new Z3TypeTransformer(this, context);
+    public Z3TransformationManager(final Z3SymbolTable symbolTable, final Map<String, EnumLitExpr> enumLitExprMap, final Context context) {
+        this.typeTransformer = new Z3TypeTransformer(this, enumLitExprMap, context);
         this.declTransformer = new Z3DeclTransformer(this, symbolTable, context);
         this.exprTransformer = new Z3ExprTransformer(this, context);
     }

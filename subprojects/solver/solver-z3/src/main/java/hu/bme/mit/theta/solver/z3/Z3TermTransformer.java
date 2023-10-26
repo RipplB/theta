@@ -17,7 +17,6 @@ package hu.bme.mit.theta.solver.z3;
 
 import com.google.common.collect.ImmutableList;
 import com.microsoft.z3.*;
-import com.microsoft.z3.enumerations.Z3_decl_kind;
 import com.microsoft.z3.enumerations.Z3_sort_kind;
 import hu.bme.mit.theta.common.TernaryOperator;
 import hu.bme.mit.theta.common.TriFunction;
@@ -79,10 +78,14 @@ final class Z3TermTransformer {
     private static final String PARAM_NAME_FORMAT = "_p%d";
 
     private final Z3SymbolTable symbolTable;
+
+    final Map<String, EnumLitExpr> enumLitExprMap;
     private final Map<String, TriFunction<com.microsoft.z3.Expr, Model, List<Decl<?>>, Expr<?>>> environment;
 
-    public Z3TermTransformer(final Z3SymbolTable symbolTable) {
+    public Z3TermTransformer(final Z3SymbolTable symbolTable,
+                             final Map<String, EnumLitExpr> enumLitExprMap) {
         this.symbolTable = symbolTable;
+        this.enumLitExprMap = enumLitExprMap;
 
         environment = Containers.createMap();
         environment.put("true", exprNullaryOperator(TrueExpr::getInstance));
@@ -174,6 +177,9 @@ final class Z3TermTransformer {
         } else if (term.isConstantArray()) {
             return transformArrLit(term, model, vars);
 
+        } else if (term.getSort().getSortKind().equals(Z3_sort_kind.Z3_DATATYPE_SORT) && enumLitExprMap.containsKey(term.toString())) {
+            return transformEnumLit(term);
+
         } else if (term.isApp()) {
             return transformApp(term, model, vars);
 
@@ -252,10 +258,8 @@ final class Z3TermTransformer {
         return FpUtils.bigFloatToFpLitExpr(bigFloat, type);
     }
 
-    private Expr<EnumType> transformEnumLit(final com.microsoft.z3.Expr term, final EnumType enumType) {
-        String longName = term.getFuncDecl().getName().toString();
-        String literal = EnumType.getShortName(longName);
-        return EnumLitExpr.of(enumType, literal);
+    private Expr<EnumType> transformEnumLit(final com.microsoft.z3.Expr term) {
+        return enumLitExprMap.get(term.toString());
     }
 
     private Expr<?> transformApp(final com.microsoft.z3.Expr term, final Model model,
@@ -481,22 +485,6 @@ final class Z3TermTransformer {
         return (term, model, vars) -> {
             final com.microsoft.z3.Expr[] args = term.getArgs();
             checkArgument(args.length == 2, "Number of arguments must be two");
-            if (args[0].getSort().getSortKind().equals(Z3_sort_kind.Z3_DATATYPE_SORT)) {
-                // binary operator is on enum types
-                // if either arg is a literal, we need special handling to get its type
-                // (references' decl kind is Z3_OP_UNINTERPRETED, literals' decl kind is Z3_OP_DT_CONSTRUCTOR)
-                int litIndex = -1;
-                for (int i = 0; i < 2; i++) {
-                    if (args[i].getFuncDecl().getDeclKind().equals(Z3_decl_kind.Z3_OP_DT_CONSTRUCTOR))
-                        litIndex = i;
-                }
-                if (litIndex > -1) {
-                    int refIndex = Math.abs(litIndex - 1);
-                    final Expr<?> refOp = transform(args[refIndex], model, vars);
-                    final Expr<EnumType> litExpr = transformEnumLit(args[litIndex], (EnumType) refOp.getType());
-                    return function.apply(refOp, litExpr);
-                }
-            }
             final Expr<?> op1 = transform(args[0], model, vars);
             final Expr<?> op2 = transform(args[1], model, vars);
             return function.apply(op1, op2);
