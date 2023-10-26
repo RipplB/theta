@@ -1,11 +1,11 @@
 package hu.bme.mit.theta.analysis.algorithm.loopchecker;
 
-import hu.bme.mit.theta.common.container.Containers;
 import hu.bme.mit.theta.core.decl.VarDecl;
 import hu.bme.mit.theta.core.stmt.*;
 import hu.bme.mit.theta.core.type.Expr;
 import hu.bme.mit.theta.core.type.Type;
 import hu.bme.mit.theta.core.type.anytype.RefExpr;
+import hu.bme.mit.theta.core.utils.ExprUtils;
 
 import java.util.Collection;
 import java.util.Set;
@@ -36,16 +36,22 @@ public final class VarCollectorStmtVisitor implements StmtVisitor<Set<VarDecl<?>
 
 	@Override
 	public <DeclType extends Type> Void visit(AssignStmt<DeclType> stmt, Set<VarDecl<?>> param) {
-		Set<RefExpr<?>> refExprs = Containers.createSet();
-		findAllRefs(stmt.getExpr(), refExprs);
-		refExprs.stream().map(RefExpr::getDecl).filter(decl -> decl instanceof VarDecl<?>).map(varDecl -> (VarDecl<?>) varDecl).filter(decl -> !param.contains(decl)).forEach(param::add);
+		Collection<VarDecl<?>> rightVars = ExprUtils.getVars(stmt.getExpr());
+		VarDecl<DeclType> leftVar = stmt.getVarDecl();
+		for (var rightVar :
+				rightVars) {
+			if (rightVar.equals(leftVar) || param.contains(rightVar)) {
+					param.add(leftVar);
+					return null;
+			}
+		}
 		return null;
 	}
 
 	@Override
 	public <DeclType extends Type> Void visit(HavocStmt<DeclType> stmt, Set<VarDecl<?>> param) {
-		if (stmt.getVarDecl().getType().getDomainSize().isInfinite())
-			throw new UnsupportedOperationException();
+//		if (stmt.getVarDecl().getType().getDomainSize().isInfinite())
+//			throw new UnsupportedOperationException();
 		param.add(stmt.getVarDecl());
 		return null;
 	}

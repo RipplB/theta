@@ -128,15 +128,15 @@ public final class LDGTraceChecker<S extends ExprState, A extends ExprAction> {
 		logger.write(Logger.Level.INFO, "Loop was unreachable%n");
 		solver.add(unreachableMarker, PathUtils.unfold(trace.getState(satPrefix + 1).toExpr(), indexings.get(satPrefix + 1)));
 		solver.add(unreachableMarker, PathUtils.unfold(trace.getAction(satPrefix).toExpr(), indexings.get(satPrefix)));
-		return infeasibleThroughInterpolant(satPrefix);
+		return infeasibleThroughInterpolant(satPrefix, indexings.get(satPrefix));
 	}
 
-	private ExprTraceStatus<ItpRefutation> infeasibleThroughInterpolant(int satPrefix) {
+	private ExprTraceStatus<ItpRefutation> infeasibleThroughInterpolant(int satPrefix, VarIndexing indexing) {
 		solver.check();
 		final Interpolant interpolant = solver.getInterpolant(pattern);
 		Expr<BoolType> interpolantExpr = interpolant.eval(satMarker);
 		logInterpolant(interpolantExpr);
-		final Expr<BoolType> itpFolded = PathUtils.foldin(interpolantExpr, indexings.get(satPrefix));
+		final Expr<BoolType> itpFolded = PathUtils.foldin(interpolantExpr, indexing);
 		return ExprTraceStatus.infeasible(ItpRefutation.binary(itpFolded, satPrefix, stateCount));
 	}
 
@@ -169,7 +169,6 @@ public final class LDGTraceChecker<S extends ExprState, A extends ExprAction> {
 		VarIndexing indexingBeforeLoop = indexings.get(ldgTrace.getTail().size());
 		VarIndexing indexingAfterLoop = indexings.get(trace.length());
 		VarIndexing deltaIndexing = indexingAfterLoop.sub(indexingBeforeLoop);
-//		variables.stream().filter(varDecl -> indexingBeforeLoop.get(varDecl) != indexingAfterLoop.get(varDecl)).forEach(usedVariables::add);
 		expandUsedVariables(usedVariables);
 		ExplPrec usedVariablesPrecision = ExplPrec.of(usedVariables);
 		int requiredLoops = findSmallestAbstractState(0, BOUND + 1, usedVariablesPrecision);
@@ -187,7 +186,7 @@ public final class LDGTraceChecker<S extends ExprState, A extends ExprAction> {
 				solver.pop();
 				putLoopOnSolver(unreachableMarker, loopIndexing);
 				logger.write(Logger.Level.INFO, "Unrolled loop of trace %d times%n", i + 1);
-				return infeasibleThroughInterpolant(i * ldgTrace.getLoop().size());
+				return infeasibleThroughInterpolant(ldgTrace.getTail().size(), loopIndexing);
 			}
 			loopIndexing = loopIndexing.add(deltaIndexing);
 			solver.push();
@@ -199,11 +198,9 @@ public final class LDGTraceChecker<S extends ExprState, A extends ExprAction> {
 			}
 			solver.pop();
 		}
-		///////////////
 		VarIndexing finalLoopIndexing = loopIndexing;
 		variables.forEach(variable -> solver.add(unreachableMarker, Eq(PathUtils.unfold(variable.getRef(), VarIndexingFactory.indexing(0)), PathUtils.unfold(variable.getRef(), finalLoopIndexing))));
-		return infeasibleThroughInterpolant((requiredLoops - 1) * ldgTrace.getLoop().size());
-		///////////////
+		return infeasibleThroughInterpolant(ldgTrace.getTail().size(), loopIndexing);
 	}
 
 	private int findSmallestAbstractState(int i, int bound, ExplPrec usedVariablesPrecision) {

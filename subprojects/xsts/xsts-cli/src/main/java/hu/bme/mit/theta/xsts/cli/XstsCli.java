@@ -36,6 +36,7 @@ import hu.bme.mit.theta.common.table.BasicTableWriter;
 import hu.bme.mit.theta.common.table.TableWriter;
 import hu.bme.mit.theta.common.visualization.Graph;
 import hu.bme.mit.theta.common.visualization.writer.GraphvizWriter;
+import hu.bme.mit.theta.core.type.enumtype.EnumType;
 import hu.bme.mit.theta.solver.SolverFactory;
 import hu.bme.mit.theta.solver.SolverManager;
 import hu.bme.mit.theta.solver.smtlib.SmtLibSolverManager;
@@ -309,7 +310,7 @@ public class XstsCli {
                              final long totalTimeMs) {
         if (benchmarkMode) {
             final CegarStatistics stats = (CegarStatistics) status.getStats().get();
-            writer.cell(status.isSafe() ? "safe" : "unsafe");
+            writer.cell(status.isSafe());
             writer.cell(totalTimeMs);
             writer.cell(stats.getAlgorithmTimeMs());
             writer.cell(stats.getAbstractorTimeMs());
@@ -327,6 +328,7 @@ public class XstsCli {
             }
             writer.cell(sts.getVars().size());
             if (ltl) {
+                writer.cell(sts.getVars().stream().filter(varDecl -> varDecl.getType() instanceof EnumType).count());
                 writer.cell(searchStrategy);
                 writer.cell(refinerStrategy);
             }
@@ -337,7 +339,6 @@ public class XstsCli {
     private void printError(final Throwable ex) {
         final String message = ex.getMessage() == null ? "" : ex.getMessage();
         if (benchmarkMode) {
-            ex.printStackTrace();
             writer.cell("[EX] " + ex.getClass().getSimpleName() + ": " + message);
             writer.newRow();
         } else {
