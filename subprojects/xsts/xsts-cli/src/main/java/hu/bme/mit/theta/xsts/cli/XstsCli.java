@@ -95,9 +95,9 @@ public class XstsCli {
             "--property-file"}, description = "Input property as a file (*.prop or *.ltl) - should contain only either a prop{} or ltl{} block")
     File propertyFile;
 
-    @Parameter(names = "--ltl",
-            description = "Do an LTL check instead of reachability - handles property parameter as LTL input (supporting *.ltl file extension)")
-    boolean ltl = false;
+    @Parameter(names = "--algorithm",
+            description = "The algorithm to use.")
+    Algorithm algorithm = Algorithm.CEGAR;
 
     @Parameter(names = {"--initialmarking"}, description = "Initial marking of the Petri net")
     String initialMarking = "";
@@ -252,10 +252,10 @@ public class XstsCli {
             return null;
         InputStream rawPropStream = null;
         if (property != null)
-            rawPropStream = new ByteArrayInputStream((String.format("%s { %s }", ltl ? "ltl" : "prop", property)).getBytes());
+            rawPropStream = new ByteArrayInputStream((String.format("%s { %s }", algorithm == Algorithm.LTLCEGAR ? "ltl" : "prop", property)).getBytes());
         if (propertyFile != null)
             rawPropStream = new FileInputStream(propertyFile);
-        if (ltl)
+        if (algorithm == Algorithm.LTLCEGAR)
             return new SequenceInputStream(new ByteArrayInputStream(("prop { true }").getBytes()), rawPropStream);
         return rawPropStream;
     }
@@ -299,7 +299,7 @@ public class XstsCli {
             return new XstsConfigBuilder(domain, refinement, abstractionSolverFactory,
                     refinementSolverFactory)
                     .maxEnum(maxEnum).autoExpl(autoExpl).initPrec(initPrec).pruneStrategy(pruneStrategy)
-                    .search(search).predSplit(predSplit).optimizeStmts(optimizeStmts).logger(logger).ltl(ltl, xsts.getLtlProp()).searchStrategy(searchStrategy).refinerStrategy(refinerStrategy)
+                    .search(search).predSplit(predSplit).optimizeStmts(optimizeStmts).logger(logger).alorithm(algorithm).ltl(xsts.getLtlProp()).searchStrategy(searchStrategy).refinerStrategy(refinerStrategy)
                     .build(xsts);
         } catch (final Exception ex) {
             throw new Exception("Could not create configuration: " + ex.getMessage(), ex);
@@ -316,7 +316,7 @@ public class XstsCli {
             writer.cell(stats.getAbstractorTimeMs());
             writer.cell(stats.getRefinerTimeMs());
             writer.cell(stats.getIterations());
-            if (!ltl) {
+            if (algorithm != Algorithm.LTLCEGAR) {
                 writer.cell(status.getArg().size());
                 writer.cell(status.getArg().getDepth());
                 writer.cell(status.getArg().getMeanBranchingFactor());
@@ -327,7 +327,7 @@ public class XstsCli {
                 writer.cell("");
             }
             writer.cell(sts.getVars().size());
-            if (ltl) {
+            if (algorithm == Algorithm.LTLCEGAR) {
                 writer.cell(sts.getVars().stream().filter(varDecl -> varDecl.getType() instanceof EnumType).count());
                 writer.cell(searchStrategy);
                 writer.cell(refinerStrategy);

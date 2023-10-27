@@ -134,6 +134,10 @@ public class XstsConfigBuilder {
         ON, OFF
     }
 
+    public enum Algorithm {
+        CEGAR, LTLCEGAR
+    }
+
     private Logger logger = NullLogger.getInstance();
     private final SolverFactory abstractionSolverFactory;
     private final SolverFactory refinementSolverFactory;
@@ -149,7 +153,7 @@ public class XstsConfigBuilder {
     private OptimizeStmts optimizeStmts = OptimizeStmts.ON;
     private AutoExpl autoExpl = AutoExpl.NEWOPERANDS;
     private String ltl;
-    private boolean isLtl = false;
+    private Algorithm algorithm = Algorithm.CEGAR;
 
     public XstsConfigBuilder(final Domain domain, final Refinement refinement,
                              final SolverFactory abstractionSolverFactory, final SolverFactory refinementSolverFactory) {
@@ -199,8 +203,12 @@ public class XstsConfigBuilder {
         return this;
     }
 
-    public XstsConfigBuilder ltl(final boolean isLtl, final String ltl) {
-        this.isLtl = isLtl;
+    public XstsConfigBuilder alorithm(final Algorithm algorithm) {
+        this.algorithm = algorithm;
+        return this;
+    }
+
+    public XstsConfigBuilder ltl(final String ltl) {
         this.ltl = ltl;
         return this;
     }
@@ -277,7 +285,7 @@ public class XstsConfigBuilder {
         };
 
         final ExplPrec prec = initPrec.builder.createExpl(xsts);
-        final SafetyChecker<XstsState<ExplState>, XstsAction, ExplPrec> checker = isLtl ? new LtlChecker<>(
+        final SafetyChecker<XstsState<ExplState>, XstsAction, ExplPrec> checker = algorithm == Algorithm.LTLCEGAR ? new LtlChecker<>(
                 analysis,
                 lts,
                 new ItpRefToExplPrec(),
@@ -355,7 +363,7 @@ public class XstsConfigBuilder {
         }
 
         final PredPrec prec = initPrec.builder.createPred(xsts);
-        final SafetyChecker<XstsState<PredState>, XstsAction, PredPrec> checker = isLtl ? new LtlChecker<>(
+        final SafetyChecker<XstsState<PredState>, XstsAction, PredPrec> checker = algorithm == Algorithm.LTLCEGAR ? new LtlChecker<>(
                 analysis,
                 lts,
                 refToPrec,
@@ -456,7 +464,7 @@ public class XstsConfigBuilder {
         };
 
         final Prod2Prec<ExplPrec, PredPrec> prec = initPrec.builder.createProd2ExplPred(xsts);
-        final SafetyChecker<XstsState<Prod2State<ExplState, PredState>>, XstsAction, Prod2Prec<ExplPrec, PredPrec>> checker = isLtl ? new LtlChecker<>(
+        final SafetyChecker<XstsState<Prod2State<ExplState, PredState>>, XstsAction, Prod2Prec<ExplPrec, PredPrec>> checker = algorithm == Algorithm.LTLCEGAR ? new LtlChecker<>(
                 analysis,
                 lts,
                 precRefiner,
