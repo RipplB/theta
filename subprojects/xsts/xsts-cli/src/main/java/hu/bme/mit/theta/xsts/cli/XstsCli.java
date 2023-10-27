@@ -226,8 +226,12 @@ public class XstsCli {
     }
 
     private void printHeader() {
-        Stream.of("Result", "TimeMs", "AlgoTimeMs", "AbsTimeMs", "RefTimeMs", "Iterations",
-                "ArgSize", "ArgDepth", "ArgMeanBranchFactor", "CexLen", "Vars").forEach(writer::cell);
+        Stream.of("Result", "TimeMs", "AlgoTimeMs", "AbsTimeMs", "RefTimeMs", "Iterations").forEach(writer::cell);
+        if (algorithm == Algorithm.CEGAR)
+            Stream.of("ArgSize", "ArgDepth", "ArgMeanBranchFactor").forEach(writer::cell);
+        Stream.of("CexLen", "Vars").forEach(writer::cell);
+        if (algorithm == Algorithm.LTLCEGAR)
+            writer.cell("EnumVars");
         writer.newRow();
     }
 
@@ -329,8 +333,6 @@ public class XstsCli {
             writer.cell(sts.getVars().size());
             if (algorithm == Algorithm.LTLCEGAR) {
                 writer.cell(sts.getVars().stream().filter(varDecl -> varDecl.getType() instanceof EnumType).count());
-                writer.cell(searchStrategy);
-                writer.cell(refinerStrategy);
             }
             writer.newRow();
         }
