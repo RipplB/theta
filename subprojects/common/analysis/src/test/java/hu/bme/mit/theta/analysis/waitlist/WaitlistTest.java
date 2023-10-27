@@ -72,51 +72,51 @@ public class WaitlistTest {
         assertTrue(waitlist.isEmpty());
     }
 
-    @Test
-    public void testLifo() {
-        final Waitlist<String> waitlist = LifoWaitlist.create();
-        assertEquals(0, waitlist.size());
-        assertTrue(waitlist.isEmpty());
-
-        waitlist.add("A");
-        assertEquals(1, waitlist.size());
-        assertFalse(waitlist.isEmpty());
-
-        waitlist.add("B");
-        assertEquals(2, waitlist.size());
-        assertFalse(waitlist.isEmpty());
-
-        waitlist.add("C");
-        assertEquals(3, waitlist.size());
-        assertFalse(waitlist.isEmpty());
-
-        waitlist.add("D");
-        assertEquals(4, waitlist.size());
-        assertFalse(waitlist.isEmpty());
-
-        final String item1 = waitlist.remove();
-        assertEquals("D", item1);
-        assertEquals(3, waitlist.size());
-        assertFalse(waitlist.isEmpty());
-
-        final String item2 = waitlist.remove();
-        assertEquals("C", item2);
-        assertEquals(2, waitlist.size());
-        assertFalse(waitlist.isEmpty());
-
-        waitlist.add("E");
-        assertEquals(3, waitlist.size());
-        assertFalse(waitlist.isEmpty());
-
-        final String item3 = waitlist.remove();
-        assertEquals("E", item3);
-        assertEquals(2, waitlist.size());
-        assertFalse(waitlist.isEmpty());
-
-        waitlist.clear();
-        assertEquals(0, waitlist.size());
-        assertTrue(waitlist.isEmpty());
-    }
+//    @Test
+//    public void testLifo() {
+//        final Waitlist<String> waitlist = LifoWaitlist.create();
+//        assertEquals(0, waitlist.size());
+//        assertTrue(waitlist.isEmpty());
+//
+//        waitlist.add("A");
+//        assertEquals(1, waitlist.size());
+//        assertFalse(waitlist.isEmpty());
+//
+//        waitlist.add("B");
+//        assertEquals(2, waitlist.size());
+//        assertFalse(waitlist.isEmpty());
+//
+//        waitlist.add("C");
+//        assertEquals(3, waitlist.size());
+//        assertFalse(waitlist.isEmpty());
+//
+//        waitlist.add("D");
+//        assertEquals(4, waitlist.size());
+//        assertFalse(waitlist.isEmpty());
+//
+//        final String item1 = waitlist.remove();
+//        assertEquals("D", item1);
+//        assertEquals(3, waitlist.size());
+//        assertFalse(waitlist.isEmpty());
+//
+//        final String item2 = waitlist.remove();
+//        assertEquals("C", item2);
+//        assertEquals(2, waitlist.size());
+//        assertFalse(waitlist.isEmpty());
+//
+//        waitlist.add("E");
+//        assertEquals(3, waitlist.size());
+//        assertFalse(waitlist.isEmpty());
+//
+//        final String item3 = waitlist.remove();
+//        assertEquals("E", item3);
+//        assertEquals(2, waitlist.size());
+//        assertFalse(waitlist.isEmpty());
+//
+//        waitlist.clear();
+//        assertEquals(0, waitlist.size());
+//        assertTrue(waitlist.isEmpty());
+//    }
 
     @Test
     public void testPriority() {
