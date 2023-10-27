@@ -136,8 +136,13 @@ public final class LDGTraceChecker<S extends ExprState, A extends ExprAction> {
 		final Interpolant interpolant = solver.getInterpolant(pattern);
 		Expr<BoolType> interpolantExpr = interpolant.eval(satMarker);
 		logInterpolant(interpolantExpr);
-		final Expr<BoolType> itpFolded = PathUtils.foldin(interpolantExpr, indexing);
-		return ExprTraceStatus.infeasible(ItpRefutation.binary(itpFolded, satPrefix, stateCount));
+		try {
+			final Expr<BoolType> itpFolded = PathUtils.foldin(interpolantExpr, indexing);
+			return ExprTraceStatus.infeasible(ItpRefutation.binary(itpFolded, satPrefix, stateCount));
+		} catch (IllegalArgumentException e) {
+			logger.write(Logger.Level.INFO, "Interpolant expression: %s; indexing: %s%n", interpolantExpr, indexing);
+			throw e;
+		}
 	}
 
 	private ExprTraceStatus<ItpRefutation> evaluateLoopCutHondaRepeatability(Valuation valuation) {
