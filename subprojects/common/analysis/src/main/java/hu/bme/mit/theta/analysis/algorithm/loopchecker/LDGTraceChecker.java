@@ -205,7 +205,7 @@ public final class LDGTraceChecker<S extends ExprState, A extends ExprAction> {
 		}
 		VarIndexing finalLoopIndexing = loopIndexing;
 		variables.forEach(variable -> solver.add(unreachableMarker, Eq(PathUtils.unfold(variable.getRef(), VarIndexingFactory.indexing(0)), PathUtils.unfold(variable.getRef(), finalLoopIndexing))));
-		return infeasibleThroughInterpolant(ldgTrace.getTail().size(), loopIndexing);
+		return infeasibleThroughInterpolant(ldgTrace.getTail().size(), loopIndexing.sub(deltaIndexing));
 	}
 
 	private int findSmallestAbstractState(int i, int bound, ExplPrec usedVariablesPrecision) {
