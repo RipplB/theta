@@ -106,12 +106,12 @@ variable:
 	name=ID
 ;
 
-AND: 'and';
-OR: 'or';
-IMPLIES: '->';
-NOT: 'not';
-EQ: '=';
-NEQ: '/=';
+AND: 'and' | '&&';
+OR: 'or' | '|' | '||';
+IMPLIES: '->' | '=>';
+NOT: 'not' | '!';
+EQ: '=' | '==';
+NEQ: '/=' | '!=';
 LT: '<';
 GT: '>';
 LEQ: '<=';

@@ -32,6 +32,7 @@ import hu.bme.mit.theta.common.CliUtils;
 import hu.bme.mit.theta.common.OsHelper;
 import hu.bme.mit.theta.common.logging.ConsoleLogger;
 import hu.bme.mit.theta.common.logging.Logger;
+import hu.bme.mit.theta.common.logging.NullLogger;
 import hu.bme.mit.theta.common.table.BasicTableWriter;
 import hu.bme.mit.theta.common.table.TableWriter;
 import hu.bme.mit.theta.common.visualization.Graph;
@@ -94,6 +95,9 @@ public class XstsCli {
     @Parameter(names = {
             "--property-file"}, description = "Input property as a file (*.prop or *.ltl) - should contain only either a prop{} or ltl{} block")
     File propertyFile;
+
+    @Parameter(names = "--ignore-property")
+    boolean ignoreProperty;
 
     @Parameter(names = "--algorithm",
             description = "The algorithm to use.")
@@ -170,8 +174,7 @@ public class XstsCli {
     private void run() {
         try {
             JCommander.newBuilder().addObject(this).programName(JAR_NAME).build().parse(args);
-//            logger = benchmarkMode ? NullLogger.getInstance() : new ConsoleLogger(logLevel);
-            logger = new ConsoleLogger(logLevel);
+            logger = benchmarkMode ? NullLogger.getInstance() : new ConsoleLogger(logLevel);
         } catch (final ParameterException ex) {
             System.out.println("Invalid parameters, details:");
             System.out.println(ex.getMessage());
@@ -241,7 +244,7 @@ public class XstsCli {
         FileInputStream modelStream = new FileInputStream(model);
         InputStream propStream = propertyStream();
         XSTS xsts;
-        if (propStream == null)
+        if (propStream == null || ignoreProperty)
             xsts = XstsDslManager.createXsts(modelStream);
         else {
             xsts = XstsDslManager.createXsts(new SequenceInputStream(modelStream, propStream));
@@ -314,7 +317,7 @@ public class XstsCli {
                              final long totalTimeMs) {
         if (benchmarkMode) {
             final CegarStatistics stats = (CegarStatistics) status.getStats().get();
-            writer.cell(status.isSafe());
+            writer.cell(status);
             writer.cell(totalTimeMs);
             writer.cell(stats.getAlgorithmTimeMs());
             writer.cell(stats.getAbstractorTimeMs());

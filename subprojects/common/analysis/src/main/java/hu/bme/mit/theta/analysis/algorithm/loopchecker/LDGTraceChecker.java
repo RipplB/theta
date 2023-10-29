@@ -260,7 +260,7 @@ public final class LDGTraceChecker<S extends ExprState, A extends ExprAction> {
 	}
 
 	private void logInterpolant(Expr<BoolType> interpolant) {
-		logger.write(Logger.Level.INFO, "Created interpolant %s%n", interpolant);
+		logger.write(Logger.Level.DETAIL, "Created interpolant %s%n", interpolant);
 	}
 
 }
