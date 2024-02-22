@@ -9,7 +9,7 @@ import hu.bme.mit.theta.analysis.algorithm.loopchecker.AcceptancePredicate
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.LDGCegarVerifier
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.RefinerStrategy
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.SearchStrategy
-import hu.bme.mit.theta.analysis.expr.ExprAction
+import hu.bme.mit.theta.analysis.expr.StmtAction
 import hu.bme.mit.theta.analysis.expr.ExprState
 import hu.bme.mit.theta.analysis.expr.refinement.ItpRefutation
 import hu.bme.mit.theta.analysis.expr.refinement.RefutationToPrec
@@ -31,7 +31,7 @@ import hu.bme.mit.theta.core.type.booltype.BoolType
 import hu.bme.mit.theta.solver.ItpSolver
 
 object LtlCheck {
-    fun <RState : ExprState, RBlank : ExprState, RAction : ExprAction, RPrec : Prec, RBlankPrec : Prec, DataPrec : Prec, DataState : ExprState> check(
+    fun <RState : ExprState, RBlank : ExprState, RAction : StmtAction, RPrec : Prec, RBlankPrec : Prec, DataPrec : Prec, DataState : ExprState> check(
         formalismAnalysis: Analysis<RState, RAction, RPrec>,
         lts: LTS<in RState, RAction>,
         refToPrec: RefutationToPrec<RPrec, ItpRefutation>,
@@ -51,7 +51,7 @@ object LtlCheck {
         logger: Logger,
         searchStrategy: SearchStrategy,
         refinerStrategy: RefinerStrategy
-    ): SafetyResult<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, ExprMultiAction<RAction, CfaAction>> {
+    ): SafetyResult<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>> {
         return check(
             formalismAnalysis,
             lts,
@@ -76,7 +76,7 @@ object LtlCheck {
         )
     }
 
-    fun <RState : ExprState, RBlank : ExprState, RAction : ExprAction, RPrec : Prec, RBlankPrec : Prec, DataPrec : Prec, DataState : ExprState> check(
+    fun <RState : ExprState, RBlank : ExprState, RAction : StmtAction, RPrec : Prec, RBlankPrec : Prec, DataPrec : Prec, DataState : ExprState> check(
         formalismAnalysis: Analysis<RState, RAction, RPrec>,
         lts: LTS<in RState, RAction>,
         refToPrec: RefutationToPrec<RPrec, ItpRefutation>,
@@ -97,13 +97,13 @@ object LtlCheck {
         logger: Logger,
         searchStrategy: SearchStrategy,
         refinerStrategy: RefinerStrategy
-    ): SafetyResult<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, ExprMultiAction<RAction, CfaAction>> {
+    ): SafetyResult<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>> {
         val buchiAutomaton = BuchiBuilder.of(ltl, variables, logger)
         val cfaAnalysis : Analysis<CfaState<DataState>, CfaAction, CfaPrec<DataPrec>> = CfaAnalysis.create(buchiAutomaton.initLoc, dataAnalysis)
         val product = MultiBuilder
             .initWithLeftSide(formalismAnalysis, combineStates, stripState, extractDataFromCombinedState, lts, initFunc, stripPrecision)
             .addRightSide(cfaAnalysis, BuchiLts(), ::combineBlankBuchiStateWithData, ::stripDataFromBuchiState, { s -> s.state}, BuchiInitFunc.of(buchiAutomaton.initLoc), { p -> p.getPrec(buchiAutomaton.initLoc)})
-            .build<DataPrec, ExprMultiState<RBlank, CfaState<UnitState>, DataState>, ExprMultiAction<RAction, CfaAction>>(defineNextSide, dataAnalysis.initFunc, {ls, rs, dns, dif -> ExprMultiAnalysis.of(ls, rs, dns, dif)}, {llts, cls, rlts, crs, dns -> ExprMultiLts.of(llts, cls, rlts, crs, dns)})
+            .build<DataPrec, ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>>(defineNextSide, dataAnalysis.initFunc, { ls, rs, dns, dif -> ExprMultiAnalysis.of(ls, rs, dns, dif)}, { llts, cls, rlts, crs, dns -> ExprMultiLts.of(llts, cls, rlts, crs, dns)})
         val buchiRefToPrec : RefutationToPrec<CfaPrec<DataPrec>, ItpRefutation> = RefutationToGlobalCfaPrec(dataRefToPrec, buchiAutomaton.initLoc)
         val multiRefToPrec = RefToMultiPrec(refToPrec, buchiRefToPrec, dataRefToPrec)
         val verifier = LDGCegarVerifier.of(product.analysis, product.lts, buchiPredicate(buchiAutomaton), logger, solver, initExpr ?: True(), multiRefToPrec)
@@ -125,7 +125,7 @@ object LtlCheck {
         return if (state.sourceSide == MultiSourceSide.LEFT) MultiSourceSide.RIGHT else MultiSourceSide.LEFT
     }
 
-    private fun <D : ExprState, S : ExprState, A : ExprAction> buchiPredicate(buchiAutomaton: CFA) : AcceptancePredicate<ExprMultiState<S, CfaState<UnitState>, D>, ExprMultiAction<A, CfaAction>> {
+    private fun <D : ExprState, S : ExprState, A : StmtAction> buchiPredicate(buchiAutomaton: CFA) : AcceptancePredicate<ExprMultiState<S, CfaState<UnitState>, D>, StmtMultiAction<A, CfaAction>> {
         return AcceptancePredicate.ofActionPredicate { a -> (a.rightAction != null && a.rightAction.edges.any { e -> buchiAutomaton.acceptingEdges.contains(e) }) }
     }
 

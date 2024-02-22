@@ -17,22 +17,22 @@ package hu.bme.mit.theta.analysis.multi;
 
 import hu.bme.mit.theta.analysis.InitFunc;
 import hu.bme.mit.theta.analysis.Prec;
-import hu.bme.mit.theta.analysis.expr.ExprAction;
+import hu.bme.mit.theta.analysis.expr.StmtAction;
 import hu.bme.mit.theta.analysis.expr.ExprState;
 
 import java.util.function.Function;
 
 public final class ExprMultiAnalysis<LState extends ExprState, RState extends ExprState, DataState extends ExprState, LBlank extends ExprState, RBlank extends ExprState,
-		LAction extends ExprAction, RAction extends ExprAction,
+		LAction extends StmtAction, RAction extends StmtAction,
 		LPrec extends Prec, RPrec extends Prec, DataPrec extends Prec, LBlankPrec extends Prec, RBlankPrec extends Prec>
-		extends MultiAnalysis<LState, RState, DataState, LBlank, RBlank, LAction, RAction, LPrec, RPrec, DataPrec, LBlankPrec, RBlankPrec, ExprMultiState<LBlank, RBlank, DataState>, ExprMultiAction<LAction, RAction>> {
+		extends MultiAnalysis<LState, RState, DataState, LBlank, RBlank, LAction, RAction, LPrec, RPrec, DataPrec, LBlankPrec, RBlankPrec, ExprMultiState<LBlank, RBlank, DataState>, StmtMultiAction<LAction, RAction>> {
 
 	private ExprMultiAnalysis(Function<ExprMultiState<LBlank, RBlank, DataState>, MultiSourceSide> defineNextSide, Side<LState, DataState, LBlank, LAction, LPrec, LBlankPrec> leftSide, Side<RState, DataState, RBlank, RAction, RPrec, RBlankPrec> rightSide, InitFunc<DataState, DataPrec> dataInitFunc) {
 		super(defineNextSide, leftSide, rightSide, dataInitFunc);
 	}
 
 	public static <LState extends ExprState, RState extends ExprState, DataState extends ExprState, LBlank extends ExprState, RBlank extends ExprState,
-			LAction extends ExprAction, RAction extends ExprAction,
+			LAction extends StmtAction, RAction extends StmtAction,
 			LPrec extends Prec, RPrec extends Prec, DataPrec extends Prec, LBlankPrec extends Prec, RBlankPrec extends Prec>
 	ExprMultiAnalysis<LState, RState, DataState, LBlank, RBlank, LAction, RAction, LPrec, RPrec, DataPrec, LBlankPrec, RBlankPrec>
 	of(Side<LState, DataState, LBlank, LAction, LPrec, LBlankPrec> leftSide, Side<RState, DataState, RBlank, RAction, RPrec, RBlankPrec> rightSide,

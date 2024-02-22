@@ -26,7 +26,6 @@ import hu.bme.mit.theta.analysis.expr.ExprStates;
 import hu.bme.mit.theta.analysis.expr.StmtAction;
 import hu.bme.mit.theta.analysis.expr.refinement.ExprTraceStatus;
 import hu.bme.mit.theta.analysis.expr.refinement.ItpRefutation;
-import hu.bme.mit.theta.analysis.multi.ExprMultiAction;
 import hu.bme.mit.theta.common.container.Containers;
 import hu.bme.mit.theta.common.logging.Logger;
 import hu.bme.mit.theta.common.logging.NullLogger;
@@ -239,9 +238,6 @@ public final class LDGTraceChecker<S extends ExprState, A extends ExprAction> {
 				.forEach(varDecl -> ldgTrace.getLoop().forEach(edge -> {
 					if (edge.action() instanceof StmtAction action)
 						VarCollectorStmtVisitor.visitAll(action.getStmts(), usedVariables);
-					if (edge.action() instanceof ExprMultiAction<?,?> multiAction && (multiAction.getAction() instanceof StmtAction action))
-							{VarCollectorStmtVisitor.visitAll(action.getStmts(), usedVariables);
-					}
 				}));
 		if (usedVariables.size() > currentSize)
 			return expandUsedVariables(usedVariables);

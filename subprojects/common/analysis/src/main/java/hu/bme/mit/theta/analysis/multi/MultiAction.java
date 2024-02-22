@@ -18,20 +18,8 @@ package hu.bme.mit.theta.analysis.multi;
 
 import hu.bme.mit.theta.analysis.Action;
 
-public abstract class MultiAction<L extends Action, R extends Action> implements Action {
-	L leftAction;
-	R rightAction;
+public interface MultiAction<L extends Action, R extends Action> extends Action {
+	L getLeftAction();
 
-	protected MultiAction(L lAction, R rAction) {
-		leftAction = lAction;
-		rightAction = rAction;
-	}
-
-	public L getLeftAction() {
-		return leftAction;
-	}
-
-	public R getRightAction() {
-		return rightAction;
-	}
+	R getRightAction();
 }

@@ -6,7 +6,7 @@ import hu.bme.mit.theta.analysis.algorithm.SafetyChecker
 import hu.bme.mit.theta.analysis.algorithm.SafetyResult
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.RefinerStrategy
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.SearchStrategy
-import hu.bme.mit.theta.analysis.expr.ExprAction
+import hu.bme.mit.theta.analysis.expr.StmtAction
 import hu.bme.mit.theta.analysis.expr.ExprState
 import hu.bme.mit.theta.analysis.expr.refinement.ItpRefutation
 import hu.bme.mit.theta.analysis.expr.refinement.RefutationToPrec
@@ -23,7 +23,7 @@ import hu.bme.mit.theta.core.type.Expr
 import hu.bme.mit.theta.core.type.booltype.BoolType
 import hu.bme.mit.theta.solver.ItpSolver
 
-class LtlChecker<RState : ExprState, RBlank : ExprState, RAction : ExprAction, RPrec : Prec, RBlankPrec : Prec, DataPrec : Prec, DataState : ExprState> (
+class LtlChecker<RState : ExprState, RBlank : ExprState, RAction : StmtAction, RPrec : Prec, RBlankPrec : Prec, DataPrec : Prec, DataState : ExprState> (
     private val formalismAnalysis: Analysis<RState, RAction, RPrec>,
     private val lts: LTS<in RState, RAction>,
     private val refToPrec: RefutationToPrec<RPrec, ItpRefutation>,

@@ -16,20 +16,20 @@
 package hu.bme.mit.theta.analysis.multi;
 
 import hu.bme.mit.theta.analysis.LTS;
-import hu.bme.mit.theta.analysis.expr.ExprAction;
+import hu.bme.mit.theta.analysis.expr.StmtAction;
 import hu.bme.mit.theta.analysis.expr.ExprState;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public final class ExprMultiLts<LState extends ExprState, RState extends ExprState, DataState extends ExprState, LBlank extends ExprState, RBlank extends ExprState, LAction extends ExprAction, RAction extends ExprAction>
-		extends MultiLts<LState, RState, DataState, LBlank, RBlank, LAction, RAction, ExprMultiState<LBlank, RBlank, DataState>, ExprMultiAction<LAction, RAction>> {
+public final class ExprMultiLts<LState extends ExprState, RState extends ExprState, DataState extends ExprState, LBlank extends ExprState, RBlank extends ExprState, LAction extends StmtAction, RAction extends StmtAction>
+		extends MultiLts<LState, RState, DataState, LBlank, RBlank, LAction, RAction, ExprMultiState<LBlank, RBlank, DataState>, StmtMultiAction<LAction, RAction>> {
 
 	private ExprMultiLts(Function<ExprMultiState<LBlank, RBlank, DataState>, MultiSourceSide> defineNextSide, Side<LState, DataState, LBlank, LAction> left, Side<RState, DataState, RBlank, RAction> right) {
 		super(defineNextSide, left, right);
 	}
 
-	public static<LState extends ExprState, RState extends ExprState, DataState extends ExprState, LBlank extends ExprState, RBlank extends ExprState, LAction extends ExprAction, RAction extends ExprAction>
+	public static<LState extends ExprState, RState extends ExprState, DataState extends ExprState, LBlank extends ExprState, RBlank extends ExprState, LAction extends StmtAction, RAction extends StmtAction>
 	ExprMultiLts<LState, RState, DataState, LBlank, RBlank, LAction, RAction> of(
 			LTS<? super LState, LAction> leftLts, BiFunction<LBlank, DataState, LState> wrapLeftState,
 			LTS<? super RState, RAction> rightLts, BiFunction<RBlank, DataState, RState> wrapRightState,
@@ -38,12 +38,12 @@ public final class ExprMultiLts<LState extends ExprState, RState extends ExprSta
 	}
 
 	@Override
-	ExprMultiAction<LAction, RAction> wrapLeftAction(LAction action) {
-		return ExprMultiAction.ofLeftExprAction(action);
+    StmtMultiAction<LAction, RAction> wrapLeftAction(LAction action) {
+		return StmtMultiAction.ofLeftStmtAction(action);
 	}
 
 	@Override
-	ExprMultiAction<LAction, RAction> wrapRightAction(RAction action) {
-		return ExprMultiAction.ofRightExprAction(action);
+    StmtMultiAction<LAction, RAction> wrapRightAction(RAction action) {
+		return StmtMultiAction.ofRightStmtAction(action);
 	}
 }
