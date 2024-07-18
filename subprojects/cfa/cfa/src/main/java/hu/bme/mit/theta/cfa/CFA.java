@@ -15,22 +15,19 @@
  */
 package hu.bme.mit.theta.cfa;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static java.lang.String.format;
-
-import java.util.*;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-
 import hu.bme.mit.theta.common.Utils;
 import hu.bme.mit.theta.common.container.Containers;
 import hu.bme.mit.theta.core.decl.VarDecl;
 import hu.bme.mit.theta.core.stmt.Stmt;
 import hu.bme.mit.theta.core.utils.StmtUtils;
+
+import java.util.*;
+
+import static com.google.common.base.Preconditions.*;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static java.lang.String.format;
 
 /**
  * Represents an immutable Control Flow Automata (CFA). Use the builder class to create a new
@@ -45,6 +42,7 @@ public final class CFA {
     private final Collection<VarDecl<?>> vars;
     private final Collection<Loc> locs;
     private final Collection<Edge> edges;
+    private final Collection<Edge> acceptingEdges;
 
     private CFA(final Builder builder) {
         initLoc = builder.initLoc;
@@ -60,6 +58,7 @@ public final class CFA {
                     "Variable with name '" + v.getName() + "' already exists in the CFA.");
             varNames.add(v.getName());
         }
+        acceptingEdges = builder.acceptingEdges;
     }
 
     public Loc getInitLoc() {
@@ -91,6 +90,10 @@ public final class CFA {
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    public Collection<Edge> getAcceptingEdges() {
+        return acceptingEdges;
     }
 
     @Override
@@ -182,6 +185,7 @@ public final class CFA {
         private Loc initLoc;
         private Loc finalLoc;
         private Loc errorLoc;
+        private final Collection<Edge> acceptingEdges;
 
         private final Collection<Loc> locs;
         private final Collection<Edge> edges;
@@ -195,6 +199,7 @@ public final class CFA {
         private Builder() {
             locs = Containers.createSet();
             locNames = Containers.createSet();
+            acceptingEdges = Containers.createSet();
             edges = new LinkedList<>();
             built = false;
         }
@@ -209,6 +214,13 @@ public final class CFA {
 
         public Loc getErrorLoc() {
             return errorLoc;
+        }
+
+        public void setAcceptingEdge(final Edge acceptingEdge) {
+            checkNotBuilt();
+            checkNotNull(acceptingEdge);
+            checkArgument(edges.contains(acceptingEdge), "Accepting edge not present in CFA.");
+            acceptingEdges.add(acceptingEdge);
         }
 
         public void setInitLoc(final Loc initLoc) {
