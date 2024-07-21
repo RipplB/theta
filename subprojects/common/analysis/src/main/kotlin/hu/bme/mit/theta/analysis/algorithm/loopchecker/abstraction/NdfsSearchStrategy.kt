@@ -23,7 +23,6 @@ import hu.bme.mit.theta.analysis.algorithm.loopchecker.ldg.LDGNode
 import hu.bme.mit.theta.analysis.expr.ExprAction
 import hu.bme.mit.theta.analysis.expr.ExprState
 import hu.bme.mit.theta.common.logging.Logger
-import java.util.*
 
 
 object NdfsSearchStrategy : ILoopcheckerSearchStrategy {
@@ -42,52 +41,46 @@ object NdfsSearchStrategy : ILoopcheckerSearchStrategy {
     }
 
     private fun <S : ExprState, A : ExprAction> redSearch(
-        seed: LDGNode<S, A>, edge: LDGEdge<S, A>, trace: MutableList<LDGEdge<S, A>>,
+        seed: LDGNode<S, A>, edge: LDGEdge<S, A>, trace: List<LDGEdge<S, A>>,
         redNodes: MutableSet<LDGNode<S, A>>, target: AcceptancePredicate<S, A>, expand: NodeExpander<S, A>
     ): List<LDGEdge<S, A>> {
         val targetNode = edge.target
-        trace.add(edge)
         if (targetNode == seed) {
-            return trace
+            return trace + edge
         }
         if (redNodes.contains(targetNode)) {
-            trace.removeLast()
             return emptyList()
         }
         redNodes.add(edge.target)
         for (nextEdge in expand(targetNode)) {
-            val redSearch: List<LDGEdge<S, A>> = redSearch(seed, nextEdge, trace, redNodes, target, expand)
+            val redSearch: List<LDGEdge<S, A>> = redSearch(seed, nextEdge, trace + edge, redNodes, target, expand)
             if (redSearch.isNotEmpty()) return redSearch
         }
-        trace.removeLast()
         return emptyList()
     }
 
     private fun <S : ExprState, A : ExprAction> blueSearch(
-        edge: LDGEdge<S, A>, trace: MutableList<LDGEdge<S, A>>, blueNodes: MutableCollection<LDGNode<S, A>>,
+        edge: LDGEdge<S, A>, trace: List<LDGEdge<S, A>>, blueNodes: MutableCollection<LDGNode<S, A>>,
         redNodes: Set<LDGNode<S, A>>, target: AcceptancePredicate<S, A>, expand: NodeExpander<S, A>
     ): Collection<LDGTrace<S, A>> {
         val targetNode = edge.target
-        trace.add(edge)
         if (target.test(Pair(targetNode.state, edge.action))) {
             // Edge source can only be null artificially, and is only used when calling other search strategies
             val accNode =
                 if (targetNode.accepting) targetNode else edge.source!!
             val redSearch: List<LDGEdge<S, A>> =
-                redSearch(accNode, edge, LinkedList<LDGEdge<S, A>>(trace), mutableSetOf(), target, expand)
+                redSearch(accNode, edge, trace, mutableSetOf(), target, expand)
             if (redSearch.isNotEmpty()) return setOf(LDGTrace(redSearch, accNode))
         }
         if (blueNodes.contains(targetNode)) {
-            trace.removeLast()
             return emptyList()
         }
         blueNodes.add(edge.target)
         for (nextEdge in expand(targetNode)) {
             val blueSearch: Collection<LDGTrace<S, A>> =
-                blueSearch(nextEdge, trace, blueNodes, redNodes, target, expand)
+                blueSearch(nextEdge, trace + edge, blueNodes, redNodes, target, expand)
             if (!blueSearch.isEmpty()) return blueSearch
         }
-        trace.removeLast()
         return emptyList()
     }
 

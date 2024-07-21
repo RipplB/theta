@@ -42,7 +42,8 @@ class LDGAbstractor<S : ExprState, A : ExprAction, P : Prec>(
         }
         val expander: NodeExpander<S, A> = { node ->
             lts.getEnabledActionsFor(node.state).flatMap { action ->
-                analysis.transFunc.getSuccStates(node.state, action, prec).map(ldg::getOrCreateNode)
+                analysis.transFunc.getSuccStates(node.state, action, prec).filterNot { it.isBottom }
+                    .map(ldg::getOrCreateNode)
                     .map { ldg.drawEdge(node, it, action, acceptancePredicate.test(Pair(it.state, action))) }
             }
         }

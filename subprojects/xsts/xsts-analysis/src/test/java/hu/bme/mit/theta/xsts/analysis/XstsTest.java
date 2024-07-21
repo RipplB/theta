@@ -45,7 +45,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(value = Parameterized.class)
 public class XstsTest {
 
-    private static final String SOLVER_STRING = "Z3";
+    private static final String SOLVER_STRING = "mathsat:latest";
     private static final Path SMTLIB_HOME = SmtLibSolverManager.HOME;
 
     @Parameterized.Parameter(value = 0)

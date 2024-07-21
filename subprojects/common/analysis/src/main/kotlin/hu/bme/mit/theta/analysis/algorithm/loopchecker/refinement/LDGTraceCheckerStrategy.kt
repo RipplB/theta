@@ -42,7 +42,8 @@ enum class LDGTraceCheckerStrategy {
         override fun <S : ExprState, A : ExprAction> check(
             trace: LDGTrace<S, A>, solverFactory: SolverFactory, init: Expr<BoolType>, logger: Logger
         ) = MilanoLDGTraceCheckerStrategy(trace, solverFactory, init, logger).check()
-    }, BOUNDED_UNROLLING {
+    },
+    BOUNDED_UNROLLING {
 
         override fun <S : ExprState, A : ExprAction> check(
             trace: LDGTrace<S, A>, solverFactory: SolverFactory, init: Expr<BoolType>, logger: Logger
@@ -61,28 +62,42 @@ enum class LDGTraceCheckerStrategy {
 
         val default = MILANO
     }
-    abstract fun<S: ExprState, A : ExprAction> check(trace: LDGTrace<S, A>, solverFactory: SolverFactory, init : Expr<BoolType> = True(), logger: Logger = NullLogger.getInstance()): ExprTraceStatus<ItpRefutation>
+
+    abstract fun <S : ExprState, A : ExprAction> check(
+        trace: LDGTrace<S, A>, solverFactory: SolverFactory, init: Expr<BoolType> = True(),
+        logger: Logger = NullLogger.getInstance()
+    ): ExprTraceStatus<ItpRefutation>
 }
 
-abstract class AbstractLDGTraceCheckerStrategy<S: ExprState, A : ExprAction>(private val trace: LDGTrace<S, A>, solverFactory: SolverFactory, private val init : Expr<BoolType>, private val logger: Logger) {
+abstract class AbstractLDGTraceCheckerStrategy<S : ExprState, A : ExprAction>(
+    private val trace: LDGTrace<S, A>, solverFactory: SolverFactory, private val init: Expr<BoolType>,
+    private val logger: Logger
+) {
+
     protected val solver: ItpSolver = solverFactory.createItpSolver()
     protected val stateCount = trace.length() + 1
     protected val indexings = mutableListOf<VarIndexing>()
     protected val satMarker: ItpMarker = solver.createMarker()
     protected val unreachableMarker: ItpMarker = solver.createMarker()
     protected val pattern: ItpPattern = solver.createBinPattern(satMarker, unreachableMarker)
-    protected val variables = trace.edges.flatMap { ExprUtils.getVars(it.source?.state?.toExpr() ?: True()) + ExprUtils.getVars(it.action?.toExpr() ?: True()) }
+    protected val variables = trace.edges.flatMap {
+        ExprUtils.getVars(it.source?.state?.toExpr() ?: True()) + ExprUtils.getVars(
+            it.action?.toExpr() ?: True()
+        )
+    }.distinct()
 
     private fun findSatIndex(): Int {
         for (i in 1 until stateCount) {
             solver.push()
             indexings.add(indexings[i - 1].add(trace.getAction(i - 1)!!.nextIndexing()))
-            solver.add(satMarker, PathUtils.unfold(trace.getState(i).toExpr(), indexings[i]))
+            val stateExpression = PathUtils.unfold(trace.getState(i).toExpr(), indexings[i])
+            solver.add(satMarker, stateExpression)
+            val actionExpression = PathUtils.unfold(
+                trace.getAction(i - 1)!!.toExpr(),
+                indexings[i - 1]
+            )
             solver.add(
-                satMarker, PathUtils.unfold(
-                    trace.getAction(i - 1)!!.toExpr(),
-                    indexings[i - 1]
-                )
+                satMarker, actionExpression
             )
             if (solver.check().isUnsat) {
                 solver.pop()
@@ -92,7 +107,7 @@ abstract class AbstractLDGTraceCheckerStrategy<S: ExprState, A : ExprAction>(pri
         return stateCount - 1
     }
 
-    abstract fun evaluateLoop(valuation: Valuation) : ExprTraceStatus<ItpRefutation>
+    abstract fun evaluateLoop(valuation: Valuation): ExprTraceStatus<ItpRefutation>
 
     fun check(): ExprTraceStatus<ItpRefutation> {
         solver.push()
@@ -136,7 +151,10 @@ abstract class AbstractLDGTraceCheckerStrategy<S: ExprState, A : ExprAction>(pri
         }
     }
 
-    protected fun getItpRefutationFeasible(): Feasible<ItpRefutation> = ExprTraceStatus.feasible(Trace.of(indexings.map { PathUtils.extractValuation(solver.model, it) }, (trace.tail + trace.loop).map { it.action }))
+    protected fun getItpRefutationFeasible(): Feasible<ItpRefutation> = ExprTraceStatus.feasible(
+        Trace.of(
+            indexings.map { PathUtils.extractValuation(solver.model, it) }, (trace.tail + trace.loop).map { it.action })
+    )
 
     protected fun logInterpolant(expr: Expr<BoolType>) {
         logger.write(Logger.Level.INFO, "Interpolant : $expr%n")

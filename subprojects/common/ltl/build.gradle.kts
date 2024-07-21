@@ -13,19 +13,20 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package hu.bme.mit.theta.analysis.multi;
+plugins {
+    id("kotlin-common")
+}
 
-import com.google.common.base.Preconditions;
-
-public enum MultiSide {
-    LEFT, RIGHT, BOTH;
-
-    public MultiSide otherSide() {
-        return complementer(this);
-    }
-
-    public static MultiSide complementer(MultiSide side) {
-        Preconditions.checkState(side != BOTH, "Only LEFT or RIGHT have complementer side");
-        return side == LEFT ? RIGHT : LEFT;
-    }
+dependencies {
+    implementation(project(":theta-common"))
+    implementation(project(":theta-core"))
+    implementation(project(":theta-solver"))
+    implementation(project(":theta-analysis"))
+    implementation(project(":theta-cfa"))
+    implementation(project(":theta-cfa-analysis"))
+    testImplementation(project(":theta-solver-z3-legacy"))
+    testImplementation(project(":theta-solver-javasmt"))
+    testImplementation(project(":theta-solver-smtlib"))
+    testImplementation(project(":theta-xsts"))
+    testImplementation(project(":theta-xsts-analysis"))
 }
