@@ -79,4 +79,6 @@ object Deps {
     }
 
     val clikt = "com.github.ajalt.clikt:clikt:${Versions.clikt}"
+
+    val jbdd = "de.tum.in:jbdd:${Versions.jbdd}"
 }

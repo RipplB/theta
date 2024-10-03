@@ -1,5 +1,5 @@
 /*
- *  Copyright 2024 Budapest University of Technology and Economics
+ *  Copyright 2023 Budapest University of Technology and Economics
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -13,14 +13,12 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-plugins {
-    id("java-common")
-    id("antlr-grammar")
-    id("kotlin-common")
-}
+package hu.bme.mit.theta.analysis.algorithm.loopchecker;
 
-dependencies {
-    implementation(project(":theta-common"))
-    implementation(project(":theta-core"))
-    implementation(Deps.jbdd)
+public enum SearchStrategy {
+	DFS, NDFS, FULL;
+
+	public static SearchStrategy defaultValue() {
+		return DFS;
+	}
 }
