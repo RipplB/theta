@@ -38,7 +38,7 @@ import hu.bme.mit.theta.solver.ItpSolver;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
-public final class LDGCegarVerifier<S extends ExprState, A extends ExprAction, P extends Prec> implements SafetyChecker<ARG<S, A>, Trace<S, A>, P> {
+public final class LDGCegarVerifier<S extends ExprState, A extends ExprAction, P extends Prec> implements SafetyChecker<ARG<S, A>, LDGTrace<S, A>, P> {
 	private final LDGAbstractor<S, A, P> abstractor;
 	private final LDGTraceRefinerSupplier<S, A, P> refinerFactory;
 	private final Logger logger;
@@ -70,7 +70,7 @@ public final class LDGCegarVerifier<S extends ExprState, A extends ExprAction, P
 		return new LDGCegarVerifier<>(LDGAbstractor.create(analysis, lts, target, logger), LDGTraceRefinerSupplier.create(solver, refToPrec, init, logger), logger);
 	}
 
-	public SafetyResult<ARG<S, A>, Trace<S, A>> verify(P initialPrecision, SearchStrategy searchStrategy, RefinerStrategy refinerStrategy) {
+	public SafetyResult<ARG<S, A>, LDGTrace<S, A>> verify(P initialPrecision, SearchStrategy searchStrategy, RefinerStrategy refinerStrategy) {
 		ARG<S, A> mockArg = ARG.create(abstractor.analysis.getPartialOrd());
 		int i = 1;
 		P currentPrecision = initialPrecision;
@@ -91,11 +91,11 @@ public final class LDGCegarVerifier<S extends ExprState, A extends ExprAction, P
 			}
 			logger.write(Logger.Level.MAINSTEP, "Abstract counterexample(s) found%n");
 			final long refinerStartTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-			RefinerResult<S, A, P> refinerResult = refiner.check(abstractResult, currentPrecision, refinerStrategy);
+			RefinerResult<S, A, P, LDGTrace<S, A>> refinerResult = refiner.check(abstractResult, currentPrecision, refinerStrategy);
 			refinerTime += stopwatch.elapsed(TimeUnit.MILLISECONDS) - refinerStartTime;
 			if (refinerResult.isUnsafe()) {
 				logger.write(Logger.Level.RESULT, "Refiner found counterexample to be feasible%n");
-				Trace<S, A> counterexample = refinerResult.asUnsafe().getCex();
+				LDGTrace<S, A> counterexample = refinerResult.asUnsafe().getCex();
 				logger.write(Logger.Level.DETAIL, "%s%n", counterexample);
 				return SafetyResult.unsafe(counterexample, mockArg, new CegarStatistics(stopwatch.elapsed(TimeUnit.MILLISECONDS),
 						abstractorTime,
@@ -115,7 +115,7 @@ public final class LDGCegarVerifier<S extends ExprState, A extends ExprAction, P
 	}
 
 	@Override
-	public SafetyResult<ARG<S, A>, Trace<S, A>> check(P prec) {
+	public SafetyResult<ARG<S, A>, LDGTrace<S, A>> check(P prec) {
 		return verify(prec, SearchStrategy.defaultValue(), RefinerStrategy.defaultValue());
 	}
 }

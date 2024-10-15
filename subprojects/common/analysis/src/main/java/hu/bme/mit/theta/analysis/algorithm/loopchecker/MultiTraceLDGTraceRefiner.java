@@ -55,7 +55,7 @@ public final class MultiTraceLDGTraceRefiner<S extends ExprState, A extends Expr
 		return create(solver, True(), refToPrec, logger);
 	}
 
-	public RefinerResult<S, A, P> check(final Collection<LDGTrace<S, A>> ldgTraces, final P currentPrecision, RefinerStrategy refinerStrategy) {
+	public RefinerResult<S, A, P, LDGTrace<S, A>> check(final Collection<LDGTrace<S, A>> ldgTraces, final P currentPrecision, RefinerStrategy refinerStrategy) {
 		checkArgument(!ldgTraces.isEmpty(), "%s needs at least one trace!", getClass().getSimpleName());
 		P newPrec = currentPrecision;
 		for (var ldgTrace :
@@ -63,7 +63,7 @@ public final class MultiTraceLDGTraceRefiner<S extends ExprState, A extends Expr
 			ExprTraceStatus<ItpRefutation> refutation;
 			refutation = LDGTraceChecker.check(ldgTrace, solver, init, refinerStrategy, logger);
 			if (refutation.isFeasible())
-				return RefinerResult.unsafe(ldgTrace.toTrace());
+				return RefinerResult.unsafe(ldgTrace);
 			newPrec = refiner.refine(newPrec, ldgTrace.toTrace(), refutation.asInfeasible().getRefutation());
 		}
 		return RefinerResult.spurious(newPrec);

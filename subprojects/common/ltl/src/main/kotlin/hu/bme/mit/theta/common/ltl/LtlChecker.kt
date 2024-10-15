@@ -20,6 +20,7 @@ import hu.bme.mit.theta.analysis.*
 import hu.bme.mit.theta.analysis.algorithm.SafetyChecker
 import hu.bme.mit.theta.analysis.algorithm.SafetyResult
 import hu.bme.mit.theta.analysis.algorithm.arg.ARG
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.LDGTrace
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.RefinerStrategy
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.SearchStrategy
 import hu.bme.mit.theta.analysis.expr.ExprState
@@ -29,6 +30,8 @@ import hu.bme.mit.theta.analysis.expr.refinement.RefutationToPrec
 import hu.bme.mit.theta.analysis.multi.MultiAction
 import hu.bme.mit.theta.analysis.multi.MultiSide
 import hu.bme.mit.theta.analysis.multi.MultiState
+import hu.bme.mit.theta.analysis.multi.stmt.ExprMultiState
+import hu.bme.mit.theta.analysis.multi.stmt.StmtMultiAction
 import hu.bme.mit.theta.analysis.unit.UnitState
 import hu.bme.mit.theta.cfa.analysis.CfaAction
 import hu.bme.mit.theta.cfa.analysis.CfaState
@@ -90,7 +93,7 @@ class LtlChecker<RState : ExprState, RBlank : ExprState, RAction : StmtAction, R
                 return SafetyResult.safe(mockArg, safetyResult.stats.get())
             return SafetyResult.safe(mockArg)
         }
-        val convertTrace = convertTrace(safetyResult.asUnsafe().cex)
+        val convertTrace = Trace.of(emptyList<RState>(), emptyList<RAction>())
         if (hasStats)
             return SafetyResult.unsafe(convertTrace, mockArg, safetyResult.stats.get())
         return SafetyResult.unsafe(convertTrace, mockArg)

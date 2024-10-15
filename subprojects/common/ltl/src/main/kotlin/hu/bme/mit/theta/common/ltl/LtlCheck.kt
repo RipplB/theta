@@ -21,6 +21,7 @@ import hu.bme.mit.theta.analysis.algorithm.SafetyResult
 import hu.bme.mit.theta.analysis.algorithm.arg.ARG
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.AcceptancePredicate
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.LDGCegarVerifier
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.LDGTrace
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.RefinerStrategy
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.SearchStrategy
 import hu.bme.mit.theta.analysis.expr.ExprState
@@ -68,7 +69,7 @@ object LtlCheck {
         logger: Logger,
         searchStrategy: SearchStrategy,
         refinerStrategy: RefinerStrategy
-    ): SafetyResult<ARG<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>>, Trace<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>>> {
+    ): SafetyResult<ARG<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>>, LDGTrace<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>>> {
         return check(
             formalismAnalysis,
             lts,
@@ -114,7 +115,7 @@ object LtlCheck {
         logger: Logger,
         searchStrategy: SearchStrategy,
         refinerStrategy: RefinerStrategy
-    ): SafetyResult<ARG<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>>, Trace<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>>> {
+    ): SafetyResult<ARG<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>>, LDGTrace<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>>> {
         val buchiAutomaton = BuchiBuilder.of(ltl, variables, logger)
         val cfaAnalysis : Analysis<CfaState<DataState>, CfaAction, CfaPrec<DataPrec>> = CfaAnalysis.create(buchiAutomaton.initLoc, dataAnalysis)
         val leftSide = MultiAnalysisSide(
