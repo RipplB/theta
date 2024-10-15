@@ -8,5 +8,5 @@ import hu.bme.mit.theta.analysis.expr.ExprState;
 import java.util.Collection;
 
 public interface LDGTraceRefiner<S extends ExprState, A extends ExprAction, P extends Prec> {
-	RefinerResult<S, A, P> check(final Collection<LDGTrace<S, A>> ldgTraces, final P currentPrecision, RefinerStrategy refinerStrategy);
+	RefinerResult<S, A, P, LDGTrace<S, A>> check(final Collection<LDGTrace<S, A>> ldgTraces, final P currentPrecision, RefinerStrategy refinerStrategy);
 }

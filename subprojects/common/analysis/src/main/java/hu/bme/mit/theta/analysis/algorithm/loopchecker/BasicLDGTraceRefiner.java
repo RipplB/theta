@@ -55,7 +55,7 @@ public final class BasicLDGTraceRefiner<S extends ExprState, A extends ExprActio
 		return create(solver, True(), refToPrec, logger);
 	}
 
-	public RefinerResult<S, A, P> check(final Collection<LDGTrace<S, A>> ldgTraces, final P currentPrecision, RefinerStrategy refinerStrategy) {
+	public RefinerResult<S, A, P, LDGTrace<S, A>> check(final Collection<LDGTrace<S, A>> ldgTraces, final P currentPrecision, RefinerStrategy refinerStrategy) {
 		checkArgument(!ldgTraces.isEmpty(), "%s needs at least one trace!", getClass().getSimpleName());
 		var ldgTrace = ldgTraces.iterator().next();
 		ExprTraceStatus<ItpRefutation> refutation = LDGTraceChecker.check(ldgTrace, solver, init, refinerStrategy, logger);
@@ -63,7 +63,7 @@ public final class BasicLDGTraceRefiner<S extends ExprState, A extends ExprActio
 			P refinedPrecision = refiner.refine(currentPrecision, ldgTrace.toTrace(), refutation.asInfeasible().getRefutation());
 			return RefinerResult.spurious(refinedPrecision);
 		}
-		return RefinerResult.unsafe(ldgTrace.toTrace());
+		return RefinerResult.unsafe(ldgTrace);
 	}
 
 }

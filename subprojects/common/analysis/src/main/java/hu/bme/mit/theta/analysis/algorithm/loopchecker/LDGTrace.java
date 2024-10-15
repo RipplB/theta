@@ -15,6 +15,7 @@
  */
 package hu.bme.mit.theta.analysis.algorithm.loopchecker;
 
+import hu.bme.mit.theta.analysis.Cex;
 import hu.bme.mit.theta.analysis.Trace;
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.exception.InvalidPathException;
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.ldg.LDGEdge;
@@ -29,7 +30,7 @@ import java.util.function.Predicate;
 /**
  * A trace representing a lasso-like counterexample. No object can be created that is not a valid lasso.
  */
-public final class LDGTrace<S extends ExprState, A extends ExprAction> {
+public final class LDGTrace<S extends ExprState, A extends ExprAction> implements Cex {
 	private final LinkedList<LDGEdge<S, A>> tail;
 
 	/**
@@ -132,5 +133,10 @@ public final class LDGTrace<S extends ExprState, A extends ExprAction> {
 
 	public List<LDGEdge<S, A>> getLoop() {
 		return loop;
+	}
+
+	@Override
+	public int length() {
+		return tail.size() + loop.size();
 	}
 }
