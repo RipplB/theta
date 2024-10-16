@@ -17,6 +17,7 @@ package hu.bme.mit.theta.analysis.algorithm.loopchecker;
 
 import hu.bme.mit.theta.analysis.Analysis;
 import hu.bme.mit.theta.analysis.LTS;
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.ldg.LDG;
 import hu.bme.mit.theta.analysis.expr.ExprStatePredicate;
 import hu.bme.mit.theta.analysis.expr.refinement.ExprTraceStatus;
 import hu.bme.mit.theta.analysis.expr.refinement.ItpRefutation;
@@ -41,6 +42,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.SequenceInputStream;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Predicate;
 
 public class LDGTraceCheckerTest {
@@ -58,9 +60,9 @@ public class LDGTraceCheckerTest {
 		final AcceptancePredicate<XstsState<PredState>, XstsAction> target = AcceptancePredicate.ofStatePredicate(statePredicate);
 		final PredPrec precision = PredPrec.of();
 		final Logger logger = new ConsoleLogger(Logger.Level.DETAIL);
-		final LDGAbstractor<XstsState<PredState>, XstsAction, PredPrec> abstractor = LDGAbstractor.create(analysis, lts, target, logger);
-		Collection<LDGTrace<XstsState<PredState>, XstsAction>> possibleTrace = abstractor.onTheFlyCheck(precision, SearchStrategy.DFS);
-		LDGTrace<XstsState<PredState>, XstsAction> trace = possibleTrace.iterator().next();
+		final LDGAbstractor<XstsState<PredState>, XstsAction, PredPrec> abstractor = LDGAbstractor.create(analysis, lts, target, SearchStrategy.defaultValue(), logger);
+		abstractor.check(LDG.create(List.of(), target), precision);
+		LDGTrace<XstsState<PredState>, XstsAction> trace = abstractor.getLdg().getTraces().iterator().next();
 
 		ExprTraceStatus<ItpRefutation> status = LDGTraceChecker.check(trace, itpSolver, RefinerStrategy.MILANO, logger);
 		Assert.assertTrue(status.isInfeasible());

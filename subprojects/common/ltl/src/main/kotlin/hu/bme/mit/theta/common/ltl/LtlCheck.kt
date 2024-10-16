@@ -18,12 +18,14 @@ package hu.bme.mit.theta.common.ltl
 
 import hu.bme.mit.theta.analysis.*
 import hu.bme.mit.theta.analysis.algorithm.SafetyResult
-import hu.bme.mit.theta.analysis.algorithm.arg.ARG
+import hu.bme.mit.theta.analysis.algorithm.cegar.CegarChecker
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.AcceptancePredicate
-import hu.bme.mit.theta.analysis.algorithm.loopchecker.LDGCegarVerifier
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.LDGAbstractor
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.LDGTrace
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.LDGTraceRefinerSupplier
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.RefinerStrategy
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.SearchStrategy
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.ldg.LDG
 import hu.bme.mit.theta.analysis.expr.ExprState
 import hu.bme.mit.theta.analysis.expr.StmtAction
 import hu.bme.mit.theta.analysis.expr.refinement.ItpRefutation
@@ -33,6 +35,8 @@ import hu.bme.mit.theta.analysis.multi.builder.stmt.StmtMultiBuilder
 import hu.bme.mit.theta.analysis.multi.stmt.ExprMultiState
 import hu.bme.mit.theta.analysis.multi.stmt.StmtMultiAction
 import hu.bme.mit.theta.analysis.unit.UnitState
+import hu.bme.mit.theta.analysis.utils.LdgVisualizer
+import hu.bme.mit.theta.analysis.utils.ProofVisualizer
 import hu.bme.mit.theta.cfa.CFA
 import hu.bme.mit.theta.cfa.analysis.CfaAction
 import hu.bme.mit.theta.cfa.analysis.CfaAnalysis
@@ -69,7 +73,7 @@ object LtlCheck {
         logger: Logger,
         searchStrategy: SearchStrategy,
         refinerStrategy: RefinerStrategy
-    ): SafetyResult<ARG<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>>, LDGTrace<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>>> {
+    ): SafetyResult<LDG<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>>, LDGTrace<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>>> {
         return check(
             formalismAnalysis,
             lts,
@@ -115,7 +119,7 @@ object LtlCheck {
         logger: Logger,
         searchStrategy: SearchStrategy,
         refinerStrategy: RefinerStrategy
-    ): SafetyResult<ARG<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>>, LDGTrace<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>>> {
+    ): SafetyResult<LDG<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>>, LDGTrace<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>>> {
         val buchiAutomaton = BuchiBuilder.of(ltl, variables, logger)
         val cfaAnalysis : Analysis<CfaState<DataState>, CfaAction, CfaPrec<DataPrec>> = CfaAnalysis.create(buchiAutomaton.initLoc, dataAnalysis)
         val leftSide = MultiAnalysisSide(
@@ -139,10 +143,10 @@ object LtlCheck {
             .build(defineNextSide, dataAnalysis.initFunc)
         val buchiRefToPrec : RefutationToPrec<CfaPrec<DataPrec>, ItpRefutation> = RefutationToGlobalCfaPrec(dataRefToPrec, buchiAutomaton.initLoc)
         val multiRefToPrec = RefToMultiPrec(refToPrec, buchiRefToPrec, dataRefToPrec)
-        val verifier = LDGCegarVerifier.of(product.side.analysis, product.lts, buchiPredicate(buchiAutomaton), logger, solver, initExpr ?: True(), multiRefToPrec)
-        return verifier.verify(MultiPrec(initPrec, GlobalCfaPrec.create(dataInitPrec), dataInitPrec),
-            searchStrategy, refinerStrategy
-        )
+        val abstractor = LDGAbstractor.create(product.side.analysis, product.lts, buchiPredicate(buchiAutomaton), searchStrategy, logger)
+        val refiner = LDGTraceRefinerSupplier.create<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>, MultiPrec<RPrec, CfaPrec<DataPrec>, DataPrec>>(solver, multiRefToPrec, initExpr ?: True(), refinerStrategy, logger).createRecommended(searchStrategy)
+        val verifier = CegarChecker.create(abstractor, refiner, LdgVisualizer.getDefault() as ProofVisualizer<LDG<ExprMultiState<RBlank, CfaState<UnitState>, DataState>, StmtMultiAction<RAction, CfaAction>>>)
+        return verifier.check(MultiPrec(initPrec, GlobalCfaPrec.create(dataInitPrec), dataInitPrec))
     }
 
     private fun <D : ExprState> combineBlankBuchiStateWithData (buchiState: CfaState<UnitState>, dataState: D) : CfaState<D> {

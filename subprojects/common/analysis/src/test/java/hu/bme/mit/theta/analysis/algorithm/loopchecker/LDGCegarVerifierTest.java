@@ -17,11 +17,15 @@ package hu.bme.mit.theta.analysis.algorithm.loopchecker;
 
 import hu.bme.mit.theta.analysis.Analysis;
 import hu.bme.mit.theta.analysis.LTS;
+import hu.bme.mit.theta.analysis.algorithm.cegar.CegarChecker;
+import hu.bme.mit.theta.analysis.algorithm.cegar.Refiner;
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.ldg.LDG;
 import hu.bme.mit.theta.analysis.expr.ExprStatePredicate;
 import hu.bme.mit.theta.analysis.expr.refinement.ItpRefutation;
 import hu.bme.mit.theta.analysis.expr.refinement.RefutationToPrec;
 import hu.bme.mit.theta.analysis.pred.*;
 import hu.bme.mit.theta.analysis.stmtoptimizer.DefaultStmtOptimizer;
+import hu.bme.mit.theta.analysis.utils.LdgVisualizer;
 import hu.bme.mit.theta.cfa.CFA;
 import hu.bme.mit.theta.cfa.analysis.CfaAction;
 import hu.bme.mit.theta.cfa.analysis.CfaAnalysis;
@@ -116,10 +120,12 @@ public class LDGCegarVerifierTest {
 		final Predicate<XstsState<PredState>> statePredicate = new XstsStatePredicate<>(new ExprStatePredicate(xsts.getProp(), abstractionSolver));
 		final AcceptancePredicate<XstsState<PredState>, XstsAction> target = AcceptancePredicate.ofStatePredicate(statePredicate);
 		logger.write(Logger.Level.MAINSTEP, "Verifying %s%n", xsts.getProp());
-		final LDGCegarVerifier<XstsState<PredState>, XstsAction, PredPrec> verifier = LDGCegarVerifier.of(analysis, lts, target, logger, itpSolver, new ItpRefToPredPrec(ExprSplitters.atoms()));
+        var abstractor = LDGAbstractor.create(analysis, lts, target, SearchStrategy.defaultValue(), logger);
+        final Refiner<XstsState<PredState>, XstsAction, PredPrec, LDG<XstsState<PredState>, XstsAction>, LDGTrace<XstsState<PredState>, XstsAction>> refiner = BasicLDGTraceRefiner.create(itpSolver, new ItpRefToPredPrec(ExprSplitters.atoms()), RefinerStrategy.defaultValue(), logger);
+		final CegarChecker<XstsState<PredState>, XstsAction, PredPrec, LDG<XstsState<PredState>, XstsAction>, LDGTrace<XstsState<PredState>, XstsAction>> verifier = CegarChecker.create(abstractor, refiner, logger, LdgVisualizer.getDefault());
 
 		final PredPrec precision = PredPrec.of();
-		var result = verifier.verify(precision, SearchStrategy.DFS, RefinerStrategy.MILANO);
+		var result = verifier.check(precision);
 		Assert.assertEquals(this.result, result.isUnsafe());
 	}
 
@@ -132,10 +138,12 @@ public class LDGCegarVerifierTest {
 		final AcceptancePredicate<CfaState<PredState>, CfaAction> target = AcceptancePredicate.ofStatePredicate(statePredicate);
 		final RefutationToPrec<PredPrec, ItpRefutation> refToPrec = new ItpRefToPredPrec(ExprSplitters.atoms());
 		final RefutationToGlobalCfaPrec<PredPrec, ItpRefutation> cfaRefToPrec = new RefutationToGlobalCfaPrec<>(refToPrec, cfa.getInitLoc());
-		final LDGCegarVerifier<CfaState<PredState>, CfaAction, CfaPrec<PredPrec>> verifier = LDGCegarVerifier.of(analysis, lts, target, logger, itpSolver, cfaRefToPrec);
+        var abstractor = LDGAbstractor.create(analysis, lts, target, SearchStrategy.defaultValue(), logger);
+        final Refiner<CfaState<PredState>, CfaAction, CfaPrec<PredPrec>, LDG<CfaState<PredState>, CfaAction>, LDGTrace<CfaState<PredState>, CfaAction>> refiner = BasicLDGTraceRefiner.create(itpSolver, cfaRefToPrec, RefinerStrategy.defaultValue(), logger);
+		final CegarChecker<CfaState<PredState>, CfaAction, CfaPrec<PredPrec>, LDG<CfaState<PredState>, CfaAction>, LDGTrace<CfaState<PredState>, CfaAction>> verifier = CegarChecker.create(abstractor, refiner, logger, LdgVisualizer.getDefault());
 
 		final GlobalCfaPrec<PredPrec> prec = GlobalCfaPrec.create(PredPrec.of());
-		var res = verifier.verify(prec, SearchStrategy.DFS, RefinerStrategy.MILANO);
+		var res = verifier.check(prec);
 		Assert.assertEquals(result, res.isUnsafe());
 	}
 }

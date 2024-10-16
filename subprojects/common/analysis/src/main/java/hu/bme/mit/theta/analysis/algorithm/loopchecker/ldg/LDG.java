@@ -15,7 +15,9 @@
  */
 package hu.bme.mit.theta.analysis.algorithm.loopchecker.ldg;
 
+import hu.bme.mit.theta.analysis.algorithm.Proof;
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.AcceptancePredicate;
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.LDGTrace;
 import hu.bme.mit.theta.analysis.expr.ExprAction;
 import hu.bme.mit.theta.analysis.expr.ExprState;
 
@@ -23,11 +25,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class LDG<S extends ExprState, A extends ExprAction> {
+public final class LDG<S extends ExprState, A extends ExprAction> implements Proof {
 
 	private final Collection<? extends S> initStates;
 	private final Map<S, LDGNode<S, A>> nodes;
 	private final AcceptancePredicate<? super S, ? super A> acceptancePredicate;
+	private Collection<LDGTrace<S, A>> traces;
 
 	LDG(final Collection<? extends S> initStates, final AcceptancePredicate<? super S, ? super A> acceptancePredicate) {
 		this.acceptancePredicate = acceptancePredicate;
@@ -54,4 +57,11 @@ public final class LDG<S extends ExprState, A extends ExprAction> {
 		return nodes.containsKey(node.getState());
 	}
 
+	public Collection<LDGTrace<S, A>> getTraces() {
+		return traces;
+	}
+
+	public void setTraces(Collection<LDGTrace<S, A>> traces) {
+		this.traces = traces;
+	}
 }

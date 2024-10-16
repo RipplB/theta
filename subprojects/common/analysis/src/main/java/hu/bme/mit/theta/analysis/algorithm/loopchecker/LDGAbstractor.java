@@ -19,6 +19,8 @@ import hu.bme.mit.theta.analysis.Analysis;
 import hu.bme.mit.theta.analysis.LTS;
 import hu.bme.mit.theta.analysis.Prec;
 import hu.bme.mit.theta.analysis.State;
+import hu.bme.mit.theta.analysis.algorithm.cegar.Abstractor;
+import hu.bme.mit.theta.analysis.algorithm.cegar.AbstractorResult;
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.ldg.LDG;
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.ldg.LDGEdge;
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.ldg.LDGNode;
@@ -33,7 +35,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public final class LDGAbstractor<S extends ExprState, A extends ExprAction, P extends Prec> {
+public final class LDGAbstractor<S extends ExprState, A extends ExprAction, P extends Prec> implements Abstractor<P, LDG<S, A>> {
 
 	private final Logger logger;
 
@@ -41,18 +43,20 @@ public final class LDGAbstractor<S extends ExprState, A extends ExprAction, P ex
 	final Analysis<S, ? super A, ? super P> analysis;
 	final LTS<? super S, ? extends A> lts;
 
+	private final SearchStrategy strategy;
 	private LDG<S, A> ldg;
-	private P prec;
+	private P precision;
 
-	private LDGAbstractor(AcceptancePredicate<? super S, ? super A> target, Analysis<S, ? super A, ? super P> analysis, LTS<? super S, ? extends A> lts, Logger logger) {
+	private LDGAbstractor(AcceptancePredicate<? super S, ? super A> target, Analysis<S, ? super A, ? super P> analysis, LTS<? super S, ? extends A> lts, SearchStrategy strategy, Logger logger) {
 		this.logger = logger != null ? logger : NullLogger.getInstance();
 		this.target = target;
 		this.analysis = analysis;
 		this.lts = lts;
+		this.strategy = strategy;
 	}
 
-	public static <S extends ExprState, A extends ExprAction, P extends Prec> LDGAbstractor<S, A, P> create(Analysis<S, ? super A, ? super P> analysis, LTS<? super S, ? extends A> lts, AcceptancePredicate<? super S, ? super A> target, Logger logger) {
-		return new LDGAbstractor<>(target, analysis, lts, logger);
+	public static <S extends ExprState, A extends ExprAction, P extends Prec> LDGAbstractor<S, A, P> create(Analysis<S, ? super A, ? super P> analysis, LTS<? super S, ? extends A> lts, AcceptancePredicate<? super S, ? super A> target, SearchStrategy strategy, Logger logger) {
+		return new LDGAbstractor<>(target, analysis, lts, strategy, logger);
 	}
 
 	public LDGEdge<S, A> connectTwoNodes(LDGNode<S, A> from, LDGNode<S, A> to, A edgeAction) {
@@ -62,9 +66,7 @@ public final class LDGAbstractor<S extends ExprState, A extends ExprAction, P ex
 		return edge;
 	}
 
-	public Collection<LDGTrace<S, A>> onTheFlyCheck(P precision, SearchStrategy strategy) {
-		ldg = LDG.create(analysis.getInitFunc().getInitStates(precision), target);
-		prec = precision;
+	public Collection<LDGTrace<S, A>> onTheFlyCheck() {
 		logger.write(Logger.Level.INFO, "On-the-fly checking started from %d initial nodes with strategy %s%n", ldg.getInitNodes().size(), strategy);
 		return switch (strategy) {
 			case DFS -> dfsSearch();
@@ -216,7 +218,7 @@ public final class LDGAbstractor<S extends ExprState, A extends ExprAction, P ex
 	private Stream<LDGEdge<S, A>> createNewNodesAndDrawEdges(LDGNode<S, A> expandingNode, S state, A action) {
 		return analysis
 				.getTransFunc()
-				.getSuccStates(state, action, prec)
+				.getSuccStates(state, action, precision)
 				.stream()
 				.filter(Predicate.not(State::isBottom))
 				.map(ldg::getOrCreateNode)
@@ -225,6 +227,24 @@ public final class LDGAbstractor<S extends ExprState, A extends ExprAction, P ex
 
 	public LDG<S, A> getLdg() {
 		return ldg;
+	}
+
+	@Override
+	public LDG<S, A> createProof() {
+		return LDG.create(List.of(), target);
+	}
+
+	@Override
+	public AbstractorResult check(LDG<S, A> witness, P prec) {
+		ldg = LDG.create(analysis.getInitFunc().getInitStates(prec), target);
+		this.precision = prec;
+		var result = onTheFlyCheck();
+		if (result.isEmpty()) {
+			return AbstractorResult.safe();
+		}
+		witness.setTraces(result);
+		ldg.setTraces(result);
+		return AbstractorResult.unsafe();
 	}
 
 	record BacktrackResult<S extends ExprState, A extends ExprAction> (Set<LDGNode<S, A>> hondas, List<LDGTrace<S, A>> lassos) {

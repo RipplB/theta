@@ -20,6 +20,7 @@ import hu.bme.mit.theta.analysis.LTS;
 import hu.bme.mit.theta.analysis.Prec;
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.AcceptancePredicate;
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.LDGAbstractor;
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.SearchStrategy;
 import hu.bme.mit.theta.analysis.expr.ExprAction;
 import hu.bme.mit.theta.analysis.expr.ExprState;
 import hu.bme.mit.theta.common.logging.NullLogger;
@@ -27,7 +28,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import static org.mockito.Mockito.*;
 
@@ -46,7 +47,7 @@ public class LDGAbstractorTest {
 	public void testConnectTwoNodes() {
 		LDGNode<ExprState, ExprAction> from = LDGNode.of(fromState, true);
 		LDGNode<ExprState, ExprAction> to = LDGNode.of(toState, true);
-		LDGAbstractor<ExprState, ExprAction, ?> abstractor = LDGAbstractor.create((Analysis<ExprState, ExprAction, Prec>) mock(Analysis.class), (LTS<ExprState, ExprAction>) mock(LTS.class), AcceptancePredicate.alwaysTrue(), NullLogger.getInstance());
+		LDGAbstractor<ExprState, ExprAction, ?> abstractor = LDGAbstractor.create((Analysis<ExprState, ExprAction, Prec>) mock(Analysis.class), (LTS<ExprState, ExprAction>) mock(LTS.class), AcceptancePredicate.alwaysTrue(), SearchStrategy.defaultValue(), NullLogger.getInstance());
 
 		LDGEdge<ExprState, ExprAction> edge = abstractor.connectTwoNodes(from, to, actionFromTo);
 
