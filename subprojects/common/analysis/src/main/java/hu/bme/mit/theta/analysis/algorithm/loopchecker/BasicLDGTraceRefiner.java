@@ -17,6 +17,7 @@ package hu.bme.mit.theta.analysis.algorithm.loopchecker;
 
 import hu.bme.mit.theta.analysis.Prec;
 import hu.bme.mit.theta.analysis.algorithm.cegar.RefinerResult;
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.ldg.LDG;
 import hu.bme.mit.theta.analysis.expr.ExprAction;
 import hu.bme.mit.theta.analysis.expr.ExprState;
 import hu.bme.mit.theta.analysis.expr.refinement.ExprTraceStatus;
@@ -30,6 +31,7 @@ import hu.bme.mit.theta.core.type.booltype.BoolType;
 import hu.bme.mit.theta.solver.ItpSolver;
 
 import java.util.Collection;
+import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static hu.bme.mit.theta.core.type.booltype.BoolExprs.True;
@@ -38,24 +40,26 @@ public final class BasicLDGTraceRefiner<S extends ExprState, A extends ExprActio
 	private final ItpSolver solver;
 	private final Expr<BoolType> init;
 	private final JoiningPrecRefiner<S, A, P, ItpRefutation> refiner;
+	private final RefinerStrategy refinerStrategy;
 	private final Logger logger;
 
-	private BasicLDGTraceRefiner(ItpSolver solver, Expr<BoolType> init, RefutationToPrec<P, ItpRefutation> refToPrec, Logger logger) {
+	private BasicLDGTraceRefiner(ItpSolver solver, Expr<BoolType> init, RefutationToPrec<P, ItpRefutation> refToPrec, RefinerStrategy refinerStrategy, Logger logger) {
 		this.solver = solver;
 		this.init = init;
+		this.refinerStrategy = refinerStrategy;
 		this.logger = logger != null ? logger : NullLogger.getInstance();
 		refiner = JoiningPrecRefiner.create(refToPrec);
 	}
 
-	public static <S extends ExprState, A extends ExprAction, P extends Prec> BasicLDGTraceRefiner<S, A, P> create(ItpSolver solver, Expr<BoolType> init, RefutationToPrec<P, ItpRefutation> refToPrec, Logger logger) {
-		return new BasicLDGTraceRefiner<>(solver, init, refToPrec, logger);
+	public static <S extends ExprState, A extends ExprAction, P extends Prec> BasicLDGTraceRefiner<S, A, P> create(ItpSolver solver, Expr<BoolType> init, RefutationToPrec<P, ItpRefutation> refToPrec, RefinerStrategy refinerStrategy, Logger logger) {
+		return new BasicLDGTraceRefiner<>(solver, init, refToPrec, refinerStrategy, logger);
 	}
 
-	public static <S extends ExprState, A extends ExprAction, P extends Prec> BasicLDGTraceRefiner<S, A, P> create(ItpSolver solver, RefutationToPrec<P, ItpRefutation> refToPrec, Logger logger) {
-		return create(solver, True(), refToPrec, logger);
+	public static <S extends ExprState, A extends ExprAction, P extends Prec> BasicLDGTraceRefiner<S, A, P> create(ItpSolver solver, RefutationToPrec<P, ItpRefutation> refToPrec, RefinerStrategy refinerStrategy, Logger logger) {
+		return create(solver, True(), refToPrec, refinerStrategy, logger);
 	}
 
-	public RefinerResult<S, A, P, LDGTrace<S, A>> check(final Collection<LDGTrace<S, A>> ldgTraces, final P currentPrecision, RefinerStrategy refinerStrategy) {
+	public RefinerResult<S, A, P, LDGTrace<S, A>> check(final Collection<LDGTrace<S, A>> ldgTraces, final P currentPrecision) {
 		checkArgument(!ldgTraces.isEmpty(), "%s needs at least one trace!", getClass().getSimpleName());
 		var ldgTrace = ldgTraces.iterator().next();
 		ExprTraceStatus<ItpRefutation> refutation = LDGTraceChecker.check(ldgTrace, solver, init, refinerStrategy, logger);
@@ -66,4 +70,8 @@ public final class BasicLDGTraceRefiner<S extends ExprState, A extends ExprActio
 		return RefinerResult.unsafe(ldgTrace);
 	}
 
+	@Override
+	public RefinerResult<S, A, P, LDGTrace<S, A>> refine(LDG<S, A> witness, P prec) {
+		return check(witness.getTraces(), prec);
+	}
 }

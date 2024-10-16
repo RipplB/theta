@@ -17,43 +17,45 @@ public final class LDGTraceRefinerSupplier<S extends ExprState, A extends ExprAc
 	private final ItpSolver solver;
 	private final RefutationToPrec<P, ItpRefutation> refToPrec;
 	private final Expr<BoolType> init;
+	private final RefinerStrategy refinerStrategy;
 	private final Logger logger;
 
-	private LDGTraceRefinerSupplier(ItpSolver solver, RefutationToPrec<P, ItpRefutation> refToPrec, Expr<BoolType> init, Logger logger){
+	private LDGTraceRefinerSupplier(ItpSolver solver, RefutationToPrec<P, ItpRefutation> refToPrec, Expr<BoolType> init, RefinerStrategy refinerStrategy, Logger logger){
 		this.solver = solver;
 		this.refToPrec = refToPrec;
 		this.init = init;
+		this.refinerStrategy = refinerStrategy;
 		this.logger = logger;
 	}
 
 	public static <S extends ExprState, A extends ExprAction, P extends Prec> LDGTraceRefinerSupplier<S, A, P>
-		create(ItpSolver solver, RefutationToPrec<P, ItpRefutation> refToPrec, Expr<BoolType> init, Logger logger) {
-		return new LDGTraceRefinerSupplier<>(solver, refToPrec, init, logger);
+		create(ItpSolver solver, RefutationToPrec<P, ItpRefutation> refToPrec, Expr<BoolType> init, RefinerStrategy refinerStrategy, Logger logger) {
+		return new LDGTraceRefinerSupplier<>(solver, refToPrec, init, refinerStrategy, logger);
 	}
 
 	public static <S extends ExprState, A extends ExprAction, P extends Prec> LDGTraceRefinerSupplier<S, A, P>
-	create(ItpSolver solver, RefutationToPrec<P, ItpRefutation> refToPrec, Logger logger) {
-		return create(solver, refToPrec, True(), logger);
+	create(ItpSolver solver, RefutationToPrec<P, ItpRefutation> refToPrec, RefinerStrategy refinerStrategy, Logger logger) {
+		return create(solver, refToPrec, True(), refinerStrategy, logger);
 	}
 
 	public LDGTraceRefiner<S, A, P> createDefault() {
-		return BasicLDGTraceRefiner.create(solver, init, refToPrec, logger);
+		return BasicLDGTraceRefiner.create(solver, init, refToPrec, refinerStrategy, logger);
 	}
 
 	public LDGTraceRefiner<S, A, P> createRecommended(SearchStrategy searchStrategy) {
 		if (searchStrategy == SearchStrategy.FULL)
-			return MultiTraceLDGTraceRefiner.create(solver, init, refToPrec, logger);
-		return BasicLDGTraceRefiner.create(solver, init, refToPrec, logger);
+			return MultiTraceLDGTraceRefiner.create(solver, init, refToPrec, refinerStrategy, logger);
+		return BasicLDGTraceRefiner.create(solver, init, refToPrec, refinerStrategy, logger);
 	}
 
-	public static <S extends ExprState, A extends ExprAction, P extends Prec> LDGTraceRefiner<S, A, P> createDefault(ItpSolver solver, Expr<BoolType> init, RefutationToPrec<P, ItpRefutation> refToPrec, Logger logger) {
-		return BasicLDGTraceRefiner.create(solver, init, refToPrec, logger);
+	public static <S extends ExprState, A extends ExprAction, P extends Prec> LDGTraceRefiner<S, A, P> createDefault(ItpSolver solver, Expr<BoolType> init, RefutationToPrec<P, ItpRefutation> refToPrec, RefinerStrategy refinerStrategy, Logger logger) {
+		return BasicLDGTraceRefiner.create(solver, init, refToPrec, refinerStrategy, logger);
 	}
 
-	public static <S extends ExprState, A extends ExprAction, P extends Prec> LDGTraceRefiner<S, A, P> createRecommended(SearchStrategy searchStrategy, ItpSolver solver, Expr<BoolType> init, RefutationToPrec<P, ItpRefutation> refToPrec, Logger logger) {
+	public static <S extends ExprState, A extends ExprAction, P extends Prec> LDGTraceRefiner<S, A, P> createRecommended(SearchStrategy searchStrategy, ItpSolver solver, Expr<BoolType> init, RefinerStrategy refinerStrategy, RefutationToPrec<P, ItpRefutation> refToPrec, Logger logger) {
 		if (searchStrategy == SearchStrategy.FULL)
-			return MultiTraceLDGTraceRefiner.create(solver, init, refToPrec, logger);
-		return createDefault(solver, init, refToPrec, logger);
+			return MultiTraceLDGTraceRefiner.create(solver, init, refToPrec, refinerStrategy, logger);
+		return createDefault(solver, init, refToPrec, refinerStrategy, logger);
 	}
 
 }

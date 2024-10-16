@@ -17,6 +17,8 @@ package hu.bme.mit.theta.analysis.algorithm.loopchecker;
 
 import hu.bme.mit.theta.analysis.Analysis;
 import hu.bme.mit.theta.analysis.LTS;
+import hu.bme.mit.theta.analysis.algorithm.cegar.AbstractorResult;
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.ldg.LDG;
 import hu.bme.mit.theta.analysis.expl.ExplPrec;
 import hu.bme.mit.theta.analysis.expl.ExplState;
 import hu.bme.mit.theta.analysis.expl.ExplStatePredicate;
@@ -50,6 +52,7 @@ import java.io.InputStream;
 import java.io.SequenceInputStream;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Predicate;
 
 import static hu.bme.mit.theta.core.type.booltype.BoolExprs.True;
@@ -104,9 +107,9 @@ public class LDGAbstractorCheckingTest {
 		final Predicate<XstsState<ExplState>> statePredicate = new XstsStatePredicate<>(new ExplStatePredicate(xsts.getProp(), abstractionSolver));
 		final AcceptancePredicate<XstsState<ExplState>, XstsAction> target = AcceptancePredicate.ofStatePredicate(statePredicate);
 		final ExplPrec precision = new XstsAllVarsInitPrec().createExpl(xsts);
-		var abstractor = LDGAbstractor.create(analysis, lts, target, new ConsoleLogger(Logger.Level.DETAIL));
-		Collection<LDGTrace<XstsState<ExplState>, XstsAction>> trace = abstractor.onTheFlyCheck(precision, SearchStrategy.DFS);
-		Assert.assertEquals(isLassoPresent, !trace.isEmpty());
+		var abstractor = LDGAbstractor.create(analysis, lts, target, SearchStrategy.defaultValue(), new ConsoleLogger(Logger.Level.DETAIL));
+		AbstractorResult result = abstractor.check(LDG.create(List.of(), target), precision);
+		Assert.assertEquals(isLassoPresent, result.isUnsafe());
 	}
 
 	private void testWithCfa() throws IOException {
@@ -117,9 +120,9 @@ public class LDGAbstractorCheckingTest {
 		final CfaPrec<ExplPrec> precision = GlobalCfaPrec.create(ExplPrec.of(cfa.getVars()));
 		Predicate<CfaState<ExplState>> statePredicate = cfaState -> cfaState.getLoc().getName().equals(acceptingLocationName);
 		AcceptancePredicate<CfaState<ExplState>, CfaAction> target = AcceptancePredicate.ofStatePredicate(statePredicate);
-		LDGAbstractor<CfaState<ExplState>, CfaAction, CfaPrec<ExplPrec>> abstractor = LDGAbstractor.create(analysis, lts, target, new ConsoleLogger(Logger.Level.VERBOSE));
-		Collection<LDGTrace<CfaState<ExplState>, CfaAction>> trace = abstractor.onTheFlyCheck(precision, SearchStrategy.DFS);
-		Assert.assertEquals(isLassoPresent, !trace.isEmpty());
+		LDGAbstractor<CfaState<ExplState>, CfaAction, CfaPrec<ExplPrec>> abstractor = LDGAbstractor.create(analysis, lts, target, SearchStrategy.defaultValue(), new ConsoleLogger(Logger.Level.DETAIL));
+		AbstractorResult result = abstractor.check(LDG.create(List.of(), target), precision);
+		Assert.assertEquals(isLassoPresent, result.isUnsafe());
 	}
 
 }

@@ -35,7 +35,7 @@ import java.util.function.Function;
 import static hu.bme.mit.theta.common.visualization.Alignment.LEFT;
 import static hu.bme.mit.theta.common.visualization.Shape.RECTANGLE;
 
-public final class LdgVisualizer<S extends ExprState, A extends ExprAction> {
+public final class LdgVisualizer<S extends ExprState, A extends ExprAction> implements ProofVisualizer<LDG<? extends S, ? extends A>> {
 
 	private static final LineStyle SUCC_EDGE_STYLE = LineStyle.NORMAL;
 	private static final String LDG_LABEL = "";
@@ -83,6 +83,7 @@ public final class LdgVisualizer<S extends ExprState, A extends ExprAction> {
 		return LazyHolderExprStatesOnly.INSTANCE;
 	}
 
+	@Override
 	public Graph visualize(final LDG<? extends S, ? extends A> ldg) {
 		traceNodes = Containers.createSet();
 		traceEdges = Containers.createSet();
