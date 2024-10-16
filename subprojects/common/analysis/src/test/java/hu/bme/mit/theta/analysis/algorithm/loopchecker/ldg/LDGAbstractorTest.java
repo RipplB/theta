@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023 Budapest University of Technology and Economics
+ *  Copyright 2024 Budapest University of Technology and Economics
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
 @RunWith(MockitoJUnitRunner.class)
 public class LDGAbstractorTest {
@@ -47,7 +47,7 @@ public class LDGAbstractorTest {
 	public void testConnectTwoNodes() {
 		LDGNode<ExprState, ExprAction> from = LDGNode.of(fromState, true);
 		LDGNode<ExprState, ExprAction> to = LDGNode.of(toState, true);
-		LDGAbstractor<ExprState, ExprAction, ?> abstractor = LDGAbstractor.create((Analysis<ExprState, ExprAction, Prec>) mock(Analysis.class), (LTS<ExprState, ExprAction>) mock(LTS.class), AcceptancePredicate.alwaysTrue(), SearchStrategy.defaultValue(), NullLogger.getInstance());
+		LDGAbstractor<ExprState, ExprAction, ?> abstractor = LDGAbstractor.create((Analysis<ExprState, ExprAction, Prec>) mock(Analysis.class), (LTS<ExprState, ExprAction>) mock(LTS.class), new AcceptancePredicate<>(), SearchStrategy.defaultValue(), NullLogger.getInstance());
 
 		LDGEdge<ExprState, ExprAction> edge = abstractor.connectTwoNodes(from, to, actionFromTo);
 

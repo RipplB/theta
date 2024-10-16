@@ -16,15 +16,13 @@
 
 package hu.bme.mit.theta.common.ltl
 
-import hu.bme.mit.theta.analysis.*
+import hu.bme.mit.theta.analysis.Analysis
+import hu.bme.mit.theta.analysis.InitFunc
+import hu.bme.mit.theta.analysis.LTS
+import hu.bme.mit.theta.analysis.Prec
 import hu.bme.mit.theta.analysis.algorithm.SafetyResult
 import hu.bme.mit.theta.analysis.algorithm.cegar.CegarChecker
-import hu.bme.mit.theta.analysis.algorithm.loopchecker.AcceptancePredicate
-import hu.bme.mit.theta.analysis.algorithm.loopchecker.LDGAbstractor
-import hu.bme.mit.theta.analysis.algorithm.loopchecker.LDGTrace
-import hu.bme.mit.theta.analysis.algorithm.loopchecker.LDGTraceRefinerSupplier
-import hu.bme.mit.theta.analysis.algorithm.loopchecker.RefinerStrategy
-import hu.bme.mit.theta.analysis.algorithm.loopchecker.SearchStrategy
+import hu.bme.mit.theta.analysis.algorithm.loopchecker.*
 import hu.bme.mit.theta.analysis.algorithm.loopchecker.ldg.LDG
 import hu.bme.mit.theta.analysis.expr.ExprState
 import hu.bme.mit.theta.analysis.expr.StmtAction
@@ -163,7 +161,7 @@ object LtlCheck {
     }
 
     private fun <D : ExprState, S : ExprState, A : StmtAction> buchiPredicate(buchiAutomaton: CFA) : AcceptancePredicate<ExprMultiState<S, CfaState<UnitState>, D>, StmtMultiAction<A, CfaAction>> {
-        return AcceptancePredicate.ofActionPredicate { a -> (a.rightAction != null && a.rightAction.edges.any { e -> buchiAutomaton.acceptingEdges.contains(e) }) }
+        return AcceptancePredicate { a -> (a?.rightAction != null && a.rightAction.edges.any { e -> buchiAutomaton.acceptingEdges.contains(e) }) }
     }
 
 }

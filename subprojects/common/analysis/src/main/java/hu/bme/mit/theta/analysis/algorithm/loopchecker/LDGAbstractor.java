@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023 Budapest University of Technology and Economics
+ *  Copyright 2024 Budapest University of Technology and Economics
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import hu.bme.mit.theta.analysis.expr.ExprState;
 import hu.bme.mit.theta.common.container.Containers;
 import hu.bme.mit.theta.common.logging.Logger;
 import hu.bme.mit.theta.common.logging.NullLogger;
+import kotlin.Pair;
 
 import java.util.*;
 import java.util.function.Function;
@@ -122,7 +123,7 @@ public final class LDGAbstractor<S extends ExprState, A extends ExprAction, P ex
 	private Collection<LDGTrace<S, A>> blueSearch(LDGEdge<S, A> edge, LinkedList<LDGEdge<S, A>> trace, Collection<LDGNode<S, A>> blueNodes, Set<LDGNode<S, A>> redNodes) {
 		var targetNode = edge.target();
 		trace.add(edge);
-		if (target.test(targetNode.getState(), edge.action())) {
+		if (target.test(new Pair<>(targetNode.getState(), edge.action()))) {
 			var accNode = targetNode.isAccepting() ? targetNode : edge.source();
 			List<LDGEdge<S, A>> redSearch = redSearch(accNode, edge, new LinkedList<>(trace), Containers.createSet());
 			if (!redSearch.isEmpty())

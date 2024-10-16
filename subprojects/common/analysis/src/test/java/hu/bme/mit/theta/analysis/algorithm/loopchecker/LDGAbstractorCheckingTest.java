@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023 Budapest University of Technology and Economics
+ *  Copyright 2024 Budapest University of Technology and Economics
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -36,11 +36,12 @@ import hu.bme.mit.theta.cfa.dsl.CfaDslManager;
 import hu.bme.mit.theta.common.logging.ConsoleLogger;
 import hu.bme.mit.theta.common.logging.Logger;
 import hu.bme.mit.theta.solver.Solver;
-import hu.bme.mit.theta.solver.z3.Z3SolverFactory;
+import hu.bme.mit.theta.solver.z3legacy.Z3LegacySolverFactory;
 import hu.bme.mit.theta.xsts.XSTS;
 import hu.bme.mit.theta.xsts.analysis.*;
 import hu.bme.mit.theta.xsts.analysis.initprec.XstsAllVarsInitPrec;
 import hu.bme.mit.theta.xsts.dsl.XstsDslManager;
+import kotlin.Unit;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -101,11 +102,11 @@ public class LDGAbstractorCheckingTest {
 		try (InputStream inputStream = new SequenceInputStream(new FileInputStream(String.format("src/test/resources/xsts/%s", fileName)), new FileInputStream(String.format("src/test/resources/prop/%s", propFileName)))) {
 			xsts = XstsDslManager.createXsts(inputStream);
 		}
-		final Solver abstractionSolver = Z3SolverFactory.getInstance().createSolver();
+		final Solver abstractionSolver = Z3LegacySolverFactory.getInstance().createSolver();
 		final Analysis<XstsState<ExplState>, XstsAction, ExplPrec> analysis = XstsAnalysis.create(ExplStmtAnalysis.create(abstractionSolver, xsts.getInitFormula(), 250));
 		final LTS<XstsState<ExplState>, XstsAction> lts = XstsLts.create(xsts, XstsStmtOptimizer.create(DefaultStmtOptimizer.create()));
 		final Predicate<XstsState<ExplState>> statePredicate = new XstsStatePredicate<>(new ExplStatePredicate(xsts.getProp(), abstractionSolver));
-		final AcceptancePredicate<XstsState<ExplState>, XstsAction> target = AcceptancePredicate.ofStatePredicate(statePredicate);
+		final AcceptancePredicate<XstsState<ExplState>, XstsAction> target = new AcceptancePredicate<>(statePredicate::test, Unit.INSTANCE);
 		final ExplPrec precision = new XstsAllVarsInitPrec().createExpl(xsts);
 		var abstractor = LDGAbstractor.create(analysis, lts, target, SearchStrategy.defaultValue(), new ConsoleLogger(Logger.Level.DETAIL));
 		AbstractorResult result = abstractor.check(LDG.create(List.of(), target), precision);
@@ -116,10 +117,10 @@ public class LDGAbstractorCheckingTest {
 		final CFA cfa = CfaDslManager.createCfa(new FileInputStream(String.format("src/test/resources/cfa/%s", fileName)));
 		final CfaLts lts = CfaConfigBuilder.Encoding.SBE.getLts(cfa.getInitLoc());
 		final Analysis<CfaState<ExplState>, CfaAction, CfaPrec<ExplPrec>> analysis = CfaAnalysis
-				.create(cfa.getInitLoc(), ExplStmtAnalysis.create(Z3SolverFactory.getInstance().createSolver(), True(), 250));
+				.create(cfa.getInitLoc(), ExplStmtAnalysis.create(Z3LegacySolverFactory.getInstance().createSolver(), True(), 250));
 		final CfaPrec<ExplPrec> precision = GlobalCfaPrec.create(ExplPrec.of(cfa.getVars()));
 		Predicate<CfaState<ExplState>> statePredicate = cfaState -> cfaState.getLoc().getName().equals(acceptingLocationName);
-		AcceptancePredicate<CfaState<ExplState>, CfaAction> target = AcceptancePredicate.ofStatePredicate(statePredicate);
+		AcceptancePredicate<CfaState<ExplState>, CfaAction> target = new AcceptancePredicate<>(statePredicate::test, Unit.INSTANCE);
 		LDGAbstractor<CfaState<ExplState>, CfaAction, CfaPrec<ExplPrec>> abstractor = LDGAbstractor.create(analysis, lts, target, SearchStrategy.defaultValue(), new ConsoleLogger(Logger.Level.DETAIL));
 		AbstractorResult result = abstractor.check(LDG.create(List.of(), target), precision);
 		Assert.assertEquals(isLassoPresent, result.isUnsafe());

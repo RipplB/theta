@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023 Budapest University of Technology and Economics
+ *  Copyright 2024 Budapest University of Technology and Economics
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -13,55 +13,36 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package hu.bme.mit.theta.analysis.algorithm.loopchecker;
 
-import hu.bme.mit.theta.analysis.expr.ExprAction;
-import hu.bme.mit.theta.analysis.expr.ExprState;
+package hu.bme.mit.theta.analysis.algorithm.loopchecker
 
-import java.util.function.Predicate;
+import hu.bme.mit.theta.analysis.Action
+import hu.bme.mit.theta.analysis.State
+import java.util.function.Predicate
 
-public final class AcceptancePredicate<S extends ExprState, A extends ExprAction> {
 
-	private final Predicate<? super S> statePredicate;
-	private final Predicate<? super A> actionPredicate;
+class AcceptancePredicate<S : State, A : Action>(
+    private val statePredicate: ((S?) -> Boolean)? = null,
+    private val actionPredicate: ((A?) -> Boolean)? = null,
+) : Predicate<Pair<S?, A?>> {
 
-	private AcceptancePredicate(Predicate<? super S> statePredicate, Predicate<? super A> actionPredicate) {
-		this.statePredicate = statePredicate;
-		this.actionPredicate = actionPredicate;
-	}
+    constructor(statePredicate: (S?) -> Boolean = { _ -> true }, a: Unit) : this(statePredicate) {
 
-	public static <S extends ExprState, A extends ExprAction> AcceptancePredicate<S, A> ofStatePredicate(Predicate<? super S> statePredicate) {
-		return new AcceptancePredicate<>(statePredicate, null);
-	}
+    }
 
-	public static <S extends ExprState, A extends ExprAction> AcceptancePredicate<S, A> ofActionPredicate(Predicate<? super A> actionPredicate) {
-		return new AcceptancePredicate<>(null, actionPredicate);
-	}
+    fun testState(state: S): Boolean {
+        return statePredicate?.invoke(state) ?: false
+    }
 
-	public static <S extends ExprState, A extends ExprAction> AcceptancePredicate<S, A> ofCombinedPredicate(Predicate<? super S> statePredicate, Predicate<? super A> actionPredicate) {
-		return new AcceptancePredicate<>(statePredicate, actionPredicate);
-	}
+    fun testAction(action: A) = actionPredicate?.invoke(action) ?: false
 
-	public static <S extends ExprState, A extends ExprAction> AcceptancePredicate<S, A> alwaysTrue() {
-		return new AcceptancePredicate<>(null, null);
-	}
-
-	public boolean test(S state, A action) {
-		if (statePredicate == null && action == null)
-			return false;
-		return (statePredicate == null || statePredicate.test(state)) && (actionPredicate == null || (action !=null && actionPredicate.test(action)));
-	}
-
-	public boolean testState(S state) {
-		if (statePredicate == null || state == null)
-			return false;
-		return statePredicate.test(state);
-	}
-
-	public boolean testAction(A action) {
-		if (actionPredicate == null || action == null)
-			return false;
-		return actionPredicate.test(action);
-	}
+    override fun test(t: Pair<S?, A?>): Boolean {
+        val state = t.first
+        val action = t.second
+        if (statePredicate == null && action == null) return false
+        return (statePredicate == null || statePredicate.invoke(
+            state
+        )) && (actionPredicate == null || (action != null && actionPredicate.invoke(action)))
+    }
 
 }

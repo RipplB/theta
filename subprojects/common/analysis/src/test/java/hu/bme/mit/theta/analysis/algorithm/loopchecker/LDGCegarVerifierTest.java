@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023 Budapest University of Technology and Economics
+ *  Copyright 2024 Budapest University of Technology and Economics
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -40,10 +40,11 @@ import hu.bme.mit.theta.common.logging.ConsoleLogger;
 import hu.bme.mit.theta.common.logging.Logger;
 import hu.bme.mit.theta.solver.ItpSolver;
 import hu.bme.mit.theta.solver.Solver;
-import hu.bme.mit.theta.solver.z3.Z3SolverFactory;
+import hu.bme.mit.theta.solver.z3legacy.Z3LegacySolverFactory;
 import hu.bme.mit.theta.xsts.XSTS;
 import hu.bme.mit.theta.xsts.analysis.*;
 import hu.bme.mit.theta.xsts.dsl.XstsDslManager;
+import kotlin.Unit;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -69,8 +70,8 @@ public class LDGCegarVerifierTest {
 
 	@BeforeClass
 	public static void init() {
-		abstractionSolver = Z3SolverFactory.getInstance().createSolver();
-		itpSolver = Z3SolverFactory.getInstance().createItpSolver();
+		abstractionSolver = Z3LegacySolverFactory.getInstance().createSolver();
+		itpSolver = Z3LegacySolverFactory.getInstance().createItpSolver();
 		logger = new ConsoleLogger(Logger.Level.INFO);
 	}
 
@@ -118,7 +119,7 @@ public class LDGCegarVerifierTest {
 		final Analysis<XstsState<PredState>, XstsAction, PredPrec> analysis = XstsAnalysis.create(PredAnalysis.create(abstractionSolver, PredAbstractors.booleanSplitAbstractor(abstractionSolver), xsts.getInitFormula()));
 		final LTS<XstsState<PredState>, XstsAction> lts = XstsLts.create(xsts, XstsStmtOptimizer.create(DefaultStmtOptimizer.create()));
 		final Predicate<XstsState<PredState>> statePredicate = new XstsStatePredicate<>(new ExprStatePredicate(xsts.getProp(), abstractionSolver));
-		final AcceptancePredicate<XstsState<PredState>, XstsAction> target = AcceptancePredicate.ofStatePredicate(statePredicate);
+		final AcceptancePredicate<XstsState<PredState>, XstsAction> target = new AcceptancePredicate<>(statePredicate::test, Unit.INSTANCE);
 		logger.write(Logger.Level.MAINSTEP, "Verifying %s%n", xsts.getProp());
         var abstractor = LDGAbstractor.create(analysis, lts, target, SearchStrategy.defaultValue(), logger);
         final Refiner<XstsState<PredState>, XstsAction, PredPrec, LDG<XstsState<PredState>, XstsAction>, LDGTrace<XstsState<PredState>, XstsAction>> refiner = BasicLDGTraceRefiner.create(itpSolver, new ItpRefToPredPrec(ExprSplitters.atoms()), RefinerStrategy.defaultValue(), logger);
@@ -135,7 +136,7 @@ public class LDGCegarVerifierTest {
 		final Analysis<CfaState<PredState>, CfaAction, CfaPrec<PredPrec>> analysis = CfaAnalysis
 				.create(cfa.getInitLoc(), PredAnalysis.create(abstractionSolver, PredAbstractors.booleanSplitAbstractor(abstractionSolver), True()));
 		final Predicate<CfaState<PredState>> statePredicate = cfaState -> cfaState.getLoc().getName().equals(acceptingLocationName);
-		final AcceptancePredicate<CfaState<PredState>, CfaAction> target = AcceptancePredicate.ofStatePredicate(statePredicate);
+		final AcceptancePredicate<CfaState<PredState>, CfaAction> target = new AcceptancePredicate<>(statePredicate::test, Unit.INSTANCE);
 		final RefutationToPrec<PredPrec, ItpRefutation> refToPrec = new ItpRefToPredPrec(ExprSplitters.atoms());
 		final RefutationToGlobalCfaPrec<PredPrec, ItpRefutation> cfaRefToPrec = new RefutationToGlobalCfaPrec<>(refToPrec, cfa.getInitLoc());
         var abstractor = LDGAbstractor.create(analysis, lts, target, SearchStrategy.defaultValue(), logger);
