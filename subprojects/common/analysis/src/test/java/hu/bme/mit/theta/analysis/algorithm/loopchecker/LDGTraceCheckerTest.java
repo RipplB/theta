@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023 Budapest University of Technology and Economics
+ *  Copyright 2024 Budapest University of Technology and Economics
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,10 +30,11 @@ import hu.bme.mit.theta.common.logging.ConsoleLogger;
 import hu.bme.mit.theta.common.logging.Logger;
 import hu.bme.mit.theta.solver.ItpSolver;
 import hu.bme.mit.theta.solver.Solver;
-import hu.bme.mit.theta.solver.z3.Z3SolverFactory;
+import hu.bme.mit.theta.solver.z3legacy.Z3LegacySolverFactory;
 import hu.bme.mit.theta.xsts.XSTS;
 import hu.bme.mit.theta.xsts.analysis.*;
 import hu.bme.mit.theta.xsts.dsl.XstsDslManager;
+import kotlin.Unit;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -41,7 +42,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.SequenceInputStream;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -52,12 +52,12 @@ public class LDGTraceCheckerTest {
 		try (InputStream inputStream = new SequenceInputStream(new FileInputStream("src/test/resources/xsts/counter3.xsts"), new FileInputStream("src/test/resources/prop/x_eq_3.prop"))) {
 			xsts = XstsDslManager.createXsts(inputStream);
 		}
-		final ItpSolver itpSolver = Z3SolverFactory.getInstance().createItpSolver();
-		final Solver abstractionSolver = Z3SolverFactory.getInstance().createSolver();
+		final ItpSolver itpSolver = Z3LegacySolverFactory.getInstance().createItpSolver();
+		final Solver abstractionSolver = Z3LegacySolverFactory.getInstance().createSolver();
 		final Analysis<XstsState<PredState>, XstsAction, PredPrec> analysis = XstsAnalysis.create(PredAnalysis.create(abstractionSolver, PredAbstractors.booleanAbstractor(abstractionSolver), xsts.getInitFormula()));
 		final LTS<XstsState<PredState>, XstsAction> lts = XstsLts.create(xsts, XstsStmtOptimizer.create(DefaultStmtOptimizer.create()));
 		final Predicate<XstsState<PredState>> statePredicate = new XstsStatePredicate<>(new ExprStatePredicate(xsts.getProp(), abstractionSolver));
-		final AcceptancePredicate<XstsState<PredState>, XstsAction> target = AcceptancePredicate.ofStatePredicate(statePredicate);
+		final AcceptancePredicate<XstsState<PredState>, XstsAction> target = new AcceptancePredicate<>(statePredicate::test, Unit.INSTANCE);
 		final PredPrec precision = PredPrec.of();
 		final Logger logger = new ConsoleLogger(Logger.Level.DETAIL);
 		final LDGAbstractor<XstsState<PredState>, XstsAction, PredPrec> abstractor = LDGAbstractor.create(analysis, lts, target, SearchStrategy.defaultValue(), logger);
