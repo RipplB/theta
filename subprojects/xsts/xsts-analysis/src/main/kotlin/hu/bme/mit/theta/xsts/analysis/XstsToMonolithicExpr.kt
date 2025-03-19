@@ -13,7 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package hu.bme.mit.theta.xsts.analysis.hu.bme.mit.theta.xsts.analysis
+package hu.bme.mit.theta.xsts.analysis
 
 import com.google.common.base.Preconditions.checkArgument
 import com.google.common.collect.ImmutableList
@@ -33,8 +33,6 @@ import hu.bme.mit.theta.core.type.booltype.SmartBoolExprs.Not
 import hu.bme.mit.theta.core.utils.StmtUtils
 import hu.bme.mit.theta.core.utils.indexings.VarIndexingFactory
 import hu.bme.mit.theta.xsts.XSTS
-import hu.bme.mit.theta.xsts.analysis.XstsAction
-import hu.bme.mit.theta.xsts.analysis.XstsState
 
 fun XSTS.toMonolithicExpr(): MonolithicExpr {
 
@@ -64,7 +62,6 @@ fun XSTS.toMonolithicExpr(): MonolithicExpr {
     transExpr,
     propExpr,
     monolithicUnfoldResult.indexing,
-    VarIndexingFactory.indexing(0),
     valToState = this::valToState,
     biValToAction = this::valToAction,
     ctrlVars = this.ctrlVars + listOf(lastActionWasEnv, initialized),

@@ -86,7 +86,6 @@ fun MonolithicExpr.createAbstract(prec: PredPrec): MonolithicExpr {
     transExpr = And(And(lambdaList), And(lambdaPrimeList), transExpr),
     propExpr = Not(And(And(lambdaList), Not(propExpr))),
     transOffsetIndex = indexingBuilder.build(),
-    initOffsetIndex = VarIndexingFactory.indexing(0),
     vars = activationLiterals + ctrlVars,
     valToState = { valuation: Valuation ->
       PredState.of(
