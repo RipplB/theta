@@ -27,7 +27,6 @@ import hu.bme.mit.theta.analysis.pred.PredState
 import hu.bme.mit.theta.analysis.ptr.PtrPrec
 import hu.bme.mit.theta.analysis.ptr.PtrState
 import hu.bme.mit.theta.common.logging.Logger
-import hu.bme.mit.theta.core.model.Valuation
 import hu.bme.mit.theta.core.type.booltype.BoolExprs.True
 import hu.bme.mit.theta.frontend.ParseContext
 import hu.bme.mit.theta.graphsolver.patterns.constraints.MCM
@@ -64,10 +63,8 @@ fun getIc3Checker(
       /* monolithicExpr = */ monolithicExpr,
       /* forwardTrace = */ !ic3Config.reversed,
       /* solverFactory = */ solverFactory,
-      /* valToState = */ { valuation -> monolithicExpr.valToState.invoke(valuation) },
-      /* biValToAction = */ { v1: Valuation, v2: Valuation ->
-        monolithicExpr.biValToAction.invoke(v1, v2)
-      },
+      /* valToState = */
+      /* biValToAction = */
       /* formerFramesOpt = */ true,
       /* unSatOpt = */ true,
       /* notBOpt = */ true,

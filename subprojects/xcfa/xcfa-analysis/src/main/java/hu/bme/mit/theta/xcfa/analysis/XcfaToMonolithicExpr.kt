@@ -49,7 +49,6 @@ import hu.bme.mit.theta.frontend.transformation.model.types.complex.integer.cint
 import hu.bme.mit.theta.xcfa.getFlatLabels
 import hu.bme.mit.theta.xcfa.model.*
 import java.math.BigInteger
-import java.util.*
 import org.kframework.mpfr.BigFloat
 
 private val LitExpr<*>.value: Int
@@ -145,8 +144,6 @@ fun XCFA.toMonolithicExpr(parseContext: ParseContext, initValues: Boolean = fals
       StmtUtils.getVars(trans).filter { !it.equals(locVar) and !it.equals(edgeVar) }.toList() +
         edgeVar +
         locVar,
-    valToState = { valToState(it) },
-    biValToAction = { val1, val2 -> valToAction(val1, val2) },
     ctrlVars = listOf(locVar, edgeVar),
   )
 }

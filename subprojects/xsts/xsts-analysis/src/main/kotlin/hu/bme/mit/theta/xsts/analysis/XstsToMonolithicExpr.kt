@@ -62,8 +62,6 @@ fun XSTS.toMonolithicExpr(): MonolithicExpr {
     transExpr,
     propExpr,
     monolithicUnfoldResult.indexing,
-    valToState = this::valToState,
-    biValToAction = this::valToAction,
     ctrlVars = this.ctrlVars + listOf(lastActionWasEnv, initialized),
   )
 }

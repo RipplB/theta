@@ -263,8 +263,7 @@ public class CfaCli {
             } else if (algorithm == Algorithm.BMC
                     || algorithm == Algorithm.KINDUCTION
                     || algorithm == Algorithm.IMC) {
-                final BoundedChecker<?, ?> checker =
-                        buildBoundedChecker(cfa, abstractionSolverFactory);
+                final BoundedChecker checker = buildBoundedChecker(cfa, abstractionSolverFactory);
                 status = checker.check(null);
             } else {
                 throw new UnsupportedOperationException(
@@ -331,19 +330,16 @@ public class CfaCli {
         }
     }
 
-    private BoundedChecker<?, ?> buildBoundedChecker(
+    private BoundedChecker buildBoundedChecker(
             final CFA cfa, final SolverFactory abstractionSolverFactory) {
         final MonolithicExpr monolithicExpr = CfaToMonolithicExprKt.toMonolithicExpr(cfa);
-        final BoundedChecker<?, ?> checker;
+        final BoundedChecker checker;
         switch (algorithm) {
             case BMC ->
                     checker =
                             BoundedCheckerBuilderKt.buildBMC(
                                     monolithicExpr,
                                     abstractionSolverFactory.createSolver(),
-                                    val -> CfaToMonolithicExprKt.valToState(cfa, val),
-                                    (val1, val2) ->
-                                            CfaToMonolithicExprKt.valToAction(cfa, val1, val2),
                                     logger);
             case KINDUCTION ->
                     checker =
@@ -351,9 +347,6 @@ public class CfaCli {
                                     monolithicExpr,
                                     abstractionSolverFactory.createSolver(),
                                     abstractionSolverFactory.createSolver(),
-                                    val -> CfaToMonolithicExprKt.valToState(cfa, val),
-                                    (val1, val2) ->
-                                            CfaToMonolithicExprKt.valToAction(cfa, val1, val2),
                                     logger);
             case IMC ->
                     checker =
@@ -361,9 +354,6 @@ public class CfaCli {
                                     monolithicExpr,
                                     abstractionSolverFactory.createSolver(),
                                     abstractionSolverFactory.createItpSolver(),
-                                    val -> CfaToMonolithicExprKt.valToState(cfa, val),
-                                    (val1, val2) ->
-                                            CfaToMonolithicExprKt.valToAction(cfa, val1, val2),
                                     logger);
             default ->
                     throw new UnsupportedOperationException(

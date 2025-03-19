@@ -16,15 +16,12 @@
 package hu.bme.mit.theta.analysis.algorithm.bounded
 
 import hu.bme.mit.theta.analysis.pred.PredPrec
-import hu.bme.mit.theta.analysis.pred.PredState
 import hu.bme.mit.theta.core.decl.Decl
 import hu.bme.mit.theta.core.decl.Decls
 import hu.bme.mit.theta.core.decl.VarDecl
-import hu.bme.mit.theta.core.model.Valuation
 import hu.bme.mit.theta.core.type.Expr
 import hu.bme.mit.theta.core.type.anytype.Exprs
 import hu.bme.mit.theta.core.type.booltype.BoolExprs
-import hu.bme.mit.theta.core.type.booltype.BoolLitExpr
 import hu.bme.mit.theta.core.type.booltype.BoolType
 import hu.bme.mit.theta.core.type.booltype.IffExpr
 import hu.bme.mit.theta.core.type.booltype.SmartBoolExprs.And
@@ -87,25 +84,6 @@ fun MonolithicExpr.createAbstract(prec: PredPrec): MonolithicExpr {
     propExpr = Not(And(And(lambdaList), Not(propExpr))),
     transOffsetIndex = indexingBuilder.build(),
     vars = activationLiterals + ctrlVars,
-    valToState = { valuation: Valuation ->
-      PredState.of(
-        valuation
-          .toMap()
-          .entries
-          .stream()
-          .filter { /*it.key in vars &&*/
-            it.key !in ctrlVars
-          }
-          .map {
-            when ((it.value as BoolLitExpr).value) {
-              true -> literalToPred[it.key]
-              false -> Not(literalToPred[it.key])
-            }
-          }
-          .toList()
-      )
-    },
-    biValToAction = { _, _ -> this.action() },
     ctrlVars = ctrlVars,
   )
 }

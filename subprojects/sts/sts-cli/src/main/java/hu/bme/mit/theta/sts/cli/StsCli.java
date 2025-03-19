@@ -363,18 +363,15 @@ public class StsCli {
         }
     }
 
-    private BoundedChecker<?, ?> buildBoundedChecker(
+    private BoundedChecker buildBoundedChecker(
             final MonolithicExpr monolithicExpr, final SolverFactory abstractionSolverFactory) {
-        final BoundedChecker<?, ?> checker;
+        final BoundedChecker checker;
         switch (algorithm) {
             case BMC ->
                     checker =
                             BoundedCheckerBuilderKt.buildBMC(
                                     monolithicExpr,
                                     abstractionSolverFactory.createSolver(),
-                                    val -> monolithicExpr.getValToState().invoke(val),
-                                    (val1, val2) ->
-                                            monolithicExpr.getBiValToAction().invoke(val1, val2),
                                     logger);
             case KINDUCTION ->
                     checker =
@@ -382,9 +379,6 @@ public class StsCli {
                                     monolithicExpr,
                                     abstractionSolverFactory.createSolver(),
                                     abstractionSolverFactory.createSolver(),
-                                    val -> monolithicExpr.getValToState().invoke(val),
-                                    (val1, val2) ->
-                                            monolithicExpr.getBiValToAction().invoke(val1, val2),
                                     logger);
             case IMC ->
                     checker =
@@ -392,9 +386,6 @@ public class StsCli {
                                     monolithicExpr,
                                     abstractionSolverFactory.createSolver(),
                                     abstractionSolverFactory.createItpSolver(),
-                                    val -> monolithicExpr.getValToState().invoke(val),
-                                    (val1, val2) ->
-                                            monolithicExpr.getBiValToAction().invoke(val1, val2),
                                     logger);
             default ->
                     throw new UnsupportedOperationException(
@@ -416,21 +407,10 @@ public class StsCli {
         }
     }
 
-    private Ic3Checker<?, ?> buildIc3Checker(
+    private Ic3Checker buildIc3Checker(
             final MonolithicExpr monolithicExpr, final SolverFactory solverFactory) {
-        return new Ic3Checker<>(
-                monolithicExpr,
-                true,
-                solverFactory,
-                valuation -> monolithicExpr.getValToState().invoke(valuation),
-                (Valuation v1, Valuation v2) -> monolithicExpr.getBiValToAction().invoke(v1, v2),
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
-                logger);
+        return new Ic3Checker(
+                monolithicExpr, true, solverFactory, true, true, true, true, true, true, logger);
     }
 
     private void printResult(

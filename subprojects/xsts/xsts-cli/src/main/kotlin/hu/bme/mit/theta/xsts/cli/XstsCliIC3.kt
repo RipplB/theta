@@ -29,7 +29,6 @@ import hu.bme.mit.theta.solver.SolverManager
 import hu.bme.mit.theta.xsts.XSTS
 import hu.bme.mit.theta.xsts.analysis.XstsAction
 import hu.bme.mit.theta.xsts.analysis.XstsState
-import hu.bme.mit.theta.xsts.analysis.hu.bme.mit.theta.xsts.analysis.valToState
 import java.util.concurrent.TimeUnit
 import kotlin.system.exitProcess
 
@@ -76,8 +75,6 @@ class XstsCliIC3 :
           it,
           !reversed,
           solverFactory,
-          it.valToState,
-          it.biValToAction,
           formerFramesOpt,
           unSatOpt,
           notBOpt,

@@ -228,11 +228,6 @@ public class XstsAbstractBoundedCheckerTest {
                                 buildBMC(
                                         abstractMonolithicExpr,
                                         Z3LegacySolverFactory.getInstance().createSolver(),
-                                        val -> abstractMonolithicExpr.getValToState().invoke(val),
-                                        (v1, v2) ->
-                                                abstractMonolithicExpr
-                                                        .getBiValToAction()
-                                                        .invoke(v1, v2),
                                         logger),
                         logger,
                         Z3LegacySolverFactory.getInstance());

@@ -73,8 +73,6 @@ fun getBoundedChecker(
           tryGetSolver(boundedConfig.indConfig.indSolver, boundedConfig.indConfig.validateIndSolver)
             ?.createSolver(),
         kindEnabled = { !boundedConfig.indConfig.disable },
-        valToState = monolithicExpr.valToState,
-        biValToAction = monolithicExpr.biValToAction,
         logger = logger,
         reverseTrace = boundedConfig.reversed,
       )

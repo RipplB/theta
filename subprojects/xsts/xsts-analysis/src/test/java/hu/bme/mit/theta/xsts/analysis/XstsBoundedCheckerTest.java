@@ -236,11 +236,7 @@ public class XstsBoundedCheckerTest {
         final var monolithicExpr = XstsToMonolithicExprKt.toMonolithicExpr(xsts);
         final var checker =
                 buildBMC(
-                        monolithicExpr,
-                        Z3LegacySolverFactory.getInstance().createSolver(),
-                        monolithicExpr.getValToState(),
-                        monolithicExpr.getBiValToAction(),
-                        logger);
+                        monolithicExpr, Z3LegacySolverFactory.getInstance().createSolver(), logger);
 
         final SafetyResult<?, ?> status = checker.check(null);
 
