@@ -16,10 +16,7 @@
 package hu.bme.mit.theta.analysis.algorithm.bounded
 
 import hu.bme.mit.theta.analysis.expr.ExprAction
-import hu.bme.mit.theta.core.decl.Decl
 import hu.bme.mit.theta.core.decl.VarDecl
-import hu.bme.mit.theta.core.model.ImmutableValuation
-import hu.bme.mit.theta.core.model.Valuation
 import hu.bme.mit.theta.core.type.Expr
 import hu.bme.mit.theta.core.type.booltype.BoolType
 import hu.bme.mit.theta.core.utils.ExprUtils.getVars

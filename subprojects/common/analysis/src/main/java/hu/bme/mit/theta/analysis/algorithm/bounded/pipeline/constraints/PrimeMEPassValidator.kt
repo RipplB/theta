@@ -1,0 +1,43 @@
+/*
+ *  Copyright 2025 Budapest University of Technology and Economics
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+package hu.bme.mit.theta.analysis.algorithm.bounded.pipeline.constraints
+
+import hu.bme.mit.theta.analysis.algorithm.Proof
+import hu.bme.mit.theta.analysis.algorithm.bounded.pipeline.MonolithicExprPassValidator
+import hu.bme.mit.theta.analysis.algorithm.bounded.pipeline.PipelineDirection
+import hu.bme.mit.theta.analysis.algorithm.bounded.pipeline.PipelineStep
+import hu.bme.mit.theta.analysis.algorithm.bounded.pipeline.exception.MEPassPipelineException
+import hu.bme.mit.theta.core.utils.ExprUtils
+import hu.bme.mit.theta.core.utils.PrimeCounter
+
+object PrimeMEPassValidator : MonolithicExprPassValidator<Proof> {
+
+  override fun checkStepResult(steps: List<PipelineStep<out Proof>>) {
+    val lastResult = steps.last().second
+    if (lastResult.direction == PipelineDirection.BACKWARD) return
+    val monolithicExpr = lastResult.expressionResult!!
+    val indexesInTransExpression = PrimeCounter.countPrimes(monolithicExpr.transExpr)
+    val indexingDelta = monolithicExpr.transOffsetIndex.sub(indexesInTransExpression)
+    val extraVars = ExprUtils.getVars(monolithicExpr.transExpr) - monolithicExpr.vars.toSet()
+    extraVars.forEach {
+      if (indexingDelta[it] < 0) {
+        throw MEPassPipelineException(
+          "Pass ${steps.last().first} created a MonolithicExpr with a trans expression that primes variable ${it.name} ${indexesInTransExpression[it]} times, but the transOffsetIndex only allows ${monolithicExpr.transOffsetIndex[it]} primes."
+        )
+      }
+    }
+  }
+}

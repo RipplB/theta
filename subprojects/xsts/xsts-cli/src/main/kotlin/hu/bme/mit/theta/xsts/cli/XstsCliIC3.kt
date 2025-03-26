@@ -67,10 +67,9 @@ class XstsCliIC3 :
     registerSolverManagers()
     val solverFactory = SolverManager.resolveSolverFactory(solver)
     val xsts = inputOptions.loadXsts()
-    val monolithicExpr = createMonolithicExpr(xsts)
     val sw = Stopwatch.createStarted()
     val checker =
-      wrapInCegarIfNeeded(monolithicExpr, solverFactory) {
+      createChecker(xsts, solverFactory) {
         Ic3Checker(
           it,
           !reversed,
@@ -84,6 +83,7 @@ class XstsCliIC3 :
           logger,
         )
       }
+    val solver = solverFactory.createSolver()
     val result = checker.check()
     sw.stop()
     printResult(

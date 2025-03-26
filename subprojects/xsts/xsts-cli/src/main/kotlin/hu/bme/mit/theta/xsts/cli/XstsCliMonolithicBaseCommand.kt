@@ -21,44 +21,53 @@ import hu.bme.mit.theta.analysis.Trace
 import hu.bme.mit.theta.analysis.algorithm.Proof
 import hu.bme.mit.theta.analysis.algorithm.SafetyChecker
 import hu.bme.mit.theta.analysis.algorithm.bounded.MonolithicExpr
-import hu.bme.mit.theta.analysis.algorithm.bounded.MonolithicExprCegarChecker
-import hu.bme.mit.theta.analysis.algorithm.bounded.createMonolithicL2S
-import hu.bme.mit.theta.analysis.algorithm.bounded.createReversed
+import hu.bme.mit.theta.analysis.algorithm.bounded.pipeline.MonolithicExprPassPipelineChecker
+import hu.bme.mit.theta.analysis.algorithm.bounded.pipeline.passes.AbstractionMEPass
+import hu.bme.mit.theta.analysis.algorithm.bounded.pipeline.passes.L2SMEPass
+import hu.bme.mit.theta.analysis.algorithm.bounded.pipeline.passes.ReverseMEPass
+import hu.bme.mit.theta.analysis.expl.ExplState
 import hu.bme.mit.theta.analysis.expr.ExprAction
-import hu.bme.mit.theta.analysis.expr.ExprState
+import hu.bme.mit.theta.analysis.expr.refinement.ExprTraceFwBinItpChecker
+import hu.bme.mit.theta.analysis.pred.PredPrec
 import hu.bme.mit.theta.analysis.unit.UnitPrec
+import hu.bme.mit.theta.core.type.booltype.BoolExprs.Not
 import hu.bme.mit.theta.solver.SolverFactory
 import hu.bme.mit.theta.xsts.XSTS
-import hu.bme.mit.theta.xsts.analysis.hu.bme.mit.theta.xsts.analysis.toMonolithicExpr
+import hu.bme.mit.theta.xsts.analysis.toMonolithicExpr
 
 abstract class XstsCliMonolithicBaseCommand(name: String? = null, help: String = "") :
   XstsCliBaseCommand(name = name, help = help) {
 
   protected val reversed: Boolean by option(help = "Reversed state space exploration").flag()
-  protected val livenessToSafety: Boolean by
+  private val livenessToSafety: Boolean by
     option(help = "Use liveness to safety transformation").flag()
-  protected val cegar: Boolean by option(help = "Wrap analysis in CEGAR loop").flag()
+  private val cegar: Boolean by option(help = "Wrap analysis in CEGAR loop").flag()
 
-  fun createMonolithicExpr(xsts: XSTS): MonolithicExpr {
-    var monolithicExpr = xsts.toMonolithicExpr()
+  fun <Pr : Proof> createChecker(
+    xsts: XSTS,
+    solverFactory: SolverFactory,
+    builder: (MonolithicExpr) -> SafetyChecker<Pr, Trace<ExplState, ExprAction>, UnitPrec>,
+  ): SafetyChecker<*, *, *> {
+    val pipeline = MonolithicExprPassPipelineChecker(xsts.toMonolithicExpr(), builder)
     if (livenessToSafety) {
-      monolithicExpr = monolithicExpr.createMonolithicL2S()
+      pipeline.registerPass(L2SMEPass())
     }
     if (reversed) {
-      monolithicExpr = monolithicExpr.createReversed()
+      pipeline.registerPass(ReverseMEPass())
     }
-    return monolithicExpr
-  }
-
-  fun <W : Proof> wrapInCegarIfNeeded(
-    monolithicExpr: MonolithicExpr,
-    solverFactory: SolverFactory,
-    builder:
-      (MonolithicExpr) -> SafetyChecker<W, out Trace<out ExprState, out ExprAction>, UnitPrec>,
-  ): SafetyChecker<*, *, *> =
     if (cegar) {
-      MonolithicExprCegarChecker(monolithicExpr, builder, logger, solverFactory)
-    } else {
-      builder(monolithicExpr)
+      pipeline.registerPass(
+        AbstractionMEPass<PredPrec, Pr>(
+          traceCheckerFactory = { model: MonolithicExpr ->
+            ExprTraceFwBinItpChecker.create(
+              model.initExpr,
+              Not(model.propExpr),
+              solverFactory.createItpSolver(),
+            )
+          }
+        )
+      )
     }
+    return pipeline
+  }
 }

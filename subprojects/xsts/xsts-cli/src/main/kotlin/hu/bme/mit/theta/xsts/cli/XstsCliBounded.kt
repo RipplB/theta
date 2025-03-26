@@ -117,12 +117,9 @@ class XstsCliBounded :
     registerSolverManagers()
     val solverFactory = SolverManager.resolveSolverFactory(solver)
     val xsts = inputOptions.loadXsts()
-    val monolithicExpr = createMonolithicExpr(xsts)
     val sw = Stopwatch.createStarted()
     val checker =
-      wrapInCegarIfNeeded(monolithicExpr, solverFactory) {
-        variant.buildChecker(it, solverFactory, logger)
-      }
+      createChecker(xsts, solverFactory) { variant.buildChecker(it, solverFactory, logger) }
     val result = checker.check()
     sw.stop()
     printResult(
